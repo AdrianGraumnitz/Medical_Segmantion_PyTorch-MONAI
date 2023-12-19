@@ -73,16 +73,3 @@ $$						  Einen Normalizer verwenden (z.b. transforms.NormalizeIntensity(keys = 
 		num_res_units: Layerstacks mit shortcut verbindungen, praktisch da sie nicht durch jede schicht backpropagieren müssen (Praktisch für Netze mit sehr vielen Layern -> Deep Nets)
 		norm = welche Form der Normalisation zwischen den Schichten stattfindet. In dem Fall wird eine Batchnormalisierung auf die Aktivierungswerte bevor sie in die Aktivierungsfunktion gehen angewand.
 $$		Die Layer des U-Nets lassen sich einfrieren, dies könnte für ein vortrainiertes Unet von nutzen sein (Falls die Layerstacks keine Eigennamen besitzen mit dem Index ansprechen)
-		
-
-
-
-
-
-
-
-
-
-	
-label = label != 0 nur binäre segmentation in mutlisegmentationen wird das label nach verwendung des softmaxes auf die prediction direkt mit der prediction verglichen
-Softmax nur im Training verwenden
