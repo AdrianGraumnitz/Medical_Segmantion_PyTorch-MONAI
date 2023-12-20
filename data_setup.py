@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from monai import transforms
 from monai.data import DataLoader, Dataset, CacheDataset
+import monai
 
 
 
@@ -101,7 +102,7 @@ def prepare(in_dir: str,
             spatial_size: list = [128, 128, 64], 
             cache = False, 
             manual_seed: bool = False, 
-            num_workers: int = os.cpu_count()) -> tuple:
+            num_workers: int = os.cpu_count()) -> tuple[monai.data.DataLoader, monai.data.DataLoader]:
     '''
     Creates datasets, applies transforms, and sets up dataloaders.
     

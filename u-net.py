@@ -3,6 +3,13 @@ from monai.networks.nets import UNet
 import torch
 from torchinfo import summary
 def unet():
+    '''
+    Unet model prepared for multisegmentation
+    
+    Returns:
+        model:The neural network model
+        device: cpu or cuda
+    '''
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = UNet(
         spatial_dims = 3,
