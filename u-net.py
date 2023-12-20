@@ -7,7 +7,7 @@ def unet():
     model = UNet(
         spatial_dims = 3,
         in_channels = 1,
-        out_channels = 7,
+        out_channels = 6,
         channels = (16, 32, 64, 128, 256),
         strides = (2, 2, 2, 2),
         num_res_units = 2,
