@@ -13,8 +13,8 @@ import monai
 
 
 
-in_dir = Path(__file__).parent
-out_dir = in_dir / 'out_dir'
+#in_dir: Path = Path(__file__).parent
+#out_dir: Path = in_dir / 'out_dir'
 
 def create_groups(in_dir: str, 
                   out_dir: str, 
@@ -28,25 +28,25 @@ def create_groups(in_dir: str,
             numb_slices: Number of the size of the data collection
     '''
     for patient_path in Path(in_dir).glob('*'):
-        patient_name = patient_path.name
-        number_folders = len(list(patient_path.glob('*'))) // numb_slices
+        patient_name: str = patient_path.name
+        number_folders: int = len(list(patient_path.glob('*'))) // numb_slices
         
         for folder_index in range(number_folders):
-            output_path = out_dir / f'{patient_name}_{str(folder_index)}'
+            output_path: Path = out_dir / f'{patient_name}_{str(folder_index)}'
             output_path.mkdir(parents = True, exist_ok = True)
             
             for i, file in enumerate(patient_path.glob('*')):
                 if i == numb_slices + 1:
                     break
             
-                shutil.move(file, output_path)
+                shutil.copy(file, output_path)
                 print(f'[INFO] File {file.name} was moved to {output_path}')
                 
 #create_groups(in_dir = in_dir,
              # out_dir = out_dir,
               #numb_slices = 20)
 
-def dicom2nifti(in_dir: str, 
+def dcom2nifti(in_dir: str, 
                 out_dir: str):
     '''
     Converts dicom files into nifti files and move them to an other directory
@@ -56,8 +56,8 @@ def dicom2nifti(in_dir: str,
         out_dir: Path to target directory
     '''
     for folder in tqdm(Path(in_dir).glob('*')):
-        patient_name = folder.name
-        dicom2nifti.dicom_series_to_nifti(folder, Path(out_dir / patient_name) + '.nii.gz')
+        patient_name: str = folder.name
+        dicom2nifti.dicom_series_to_nifti(folder, Path(out_dir / f'{patient_name}.nii.gz'))
            
 def find_empty(in_dir: str) -> list:
     '''
@@ -70,9 +70,9 @@ def find_empty(in_dir: str) -> list:
         list_patients: A list with not empty nifti files
     '''
 
-    list_patients = []
+    list_patients: list = []
     for patient_path in Path(in_dir).glob('*'):
-        img = nib.load(patient_path)
+        img: Nifti1Image = nib.load(patient_path)
         
         if len(np.unique(img.get_fdata())) > 2:
             print(f'[INFO] Nifti file: {patient_path.name} with content')
@@ -126,31 +126,32 @@ def prepare(in_dir: str,
     if manual_seed:
         set_seed()
     
-    path_train_volumes = sorted(Path(in_dir / 'nifti_files' / 'train_volumes').glob('*.nii.gz'))
-    path_train_segmentations = sorted(Path(in_dir / 'nifti_files' / 'train_segmentations').glob('*.nii.gz'))
+    path_train_volumes: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_volumes').glob('*.nii.gz'))
+    path_train_segmentations: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_segmentations').glob('*.nii.gz'))
     
-    path_test_volumes = sorted(Path(in_dir / 'nifti_files' / 'test_volumes').glob('*nii.gz'))
-    path_test_segmentations = sorted(Path(in_dir / 'nifti_files' / 'test_segmentations').glob('*.nii.gz'))  
+    path_test_volumes: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'test_volumes').glob('*nii.gz'))
+    path_test_segmentations: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'test_segmentations').glob('*.nii.gz'))
     
-    train_files = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_train_volumes, path_train_segmentations)]
-    test_files = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_test_volumes, path_test_segmentations)]
+    train_files: list[dict[Path, Path]] = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_train_volumes, path_train_segmentations)]
+    test_files: list[dict[Path, Path]] = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_test_volumes, path_test_segmentations)]
     
-    train_transform = transforms.Compose([
+    train_transform: Compose = transforms.Compose([
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
         transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
         transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.ScaleIntensityRange(keys = ['vol', 'seg'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
         transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size),
         transforms.ToTensor()
     ])
-    test_transform = transforms.Compose([
+    
+    test_transform: Compose = transforms.Compose([
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
         transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
         transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.ScaleIntensityRange(keys = ['vol', 'seg'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
         transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size),
         transforms.ToTensor()
@@ -159,33 +160,33 @@ def prepare(in_dir: str,
     
     
     if cache:
-        train_dataset = CacheDataset(data = train_files,
+        train_dataset: CacheDataset = CacheDataset(data = train_files,
                                      transform = train_transform,
                                      cache_rate = 0.1)
-        train_dataloader = DataLoader(dataset = train_dataset,
+        train_dataloader: DataLoader = DataLoader(dataset = train_dataset,
                                       batch_size = 1,
                                       shuffle = True,
                                       num_workers = num_workers)
-        test_dataset = CacheDataset(data = test_files,
+        test_dataset: CacheDataset = CacheDataset(data = test_files,
                                     transform = test_transform,
                                     cache_rate = 0.1)
-        test_dataloader = DataLoader(dataset = test_dataset,
+        test_dataloader: DataLoader = DataLoader(dataset = test_dataset,
                                      batch_size = 1,
                                      shuffle = False,
                                      num_workers = num_workers)
         
     else:
-        train_dataset = Dataset(data = train_files,
+        train_dataset: Dataset = Dataset(data = train_files,
                                 transform = train_transform)
-        train_dataloader = DataLoader(dataset = train_dataset,
+        train_dataloader: DataLoader = DataLoader(dataset = train_dataset,
                                       batch_size = 1,
                                       shuffle = True,
                                       num_workers = num_workers)
-        test_dataset = Dataset(data = test_files,
+        test_dataset: Dataset = Dataset(data = test_files,
                                transform = test_transform)
-        test_dataloader = DataLoader(dataset = test_dataset,
+        test_dataloader: DataLoader = DataLoader(dataset = test_dataset,
                                      batch_size = 1,
-                                     Shuffle = False,
+                                     shuffle = False,
                                      num_workers = num_workers)
     
     return train_dataloader, test_dataloader

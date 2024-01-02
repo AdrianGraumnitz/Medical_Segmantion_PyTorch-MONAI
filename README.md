@@ -25,10 +25,11 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-Pytorch  
 		-nibabel  
 		-torchinfo  
-		-torchmetrics  
-		-torchvision  
-		-typing  
+		-torchmetrics (brauch ich vielleicht gar nicht (nutze dice_metric))
+		-torchvision 
+		-typing (deprecated) 
 		-tqdm  
+!!		-nii2dcm (um die anwendung konsistent in python zu haben)
 		-dicom2nifti  
 	
 	
@@ -39,6 +40,7 @@ Funktionen:
 	-create_groups: patient_name = gibt die pfadnamen (Dateinamen) zurück.  
 					numberfolders = teilt den inhalt eines underverzeichnisses durch die variabel Number_Slices.  
 					Ich würde gern ein Feedback bekommen wenn der Pfad schon existiert, klappt noch nicht.  
+					Wichtig: der Pfad muss auf das Train/Test directory zeigen, nicht auf die unterordner ('test_data' / 'dicom' /'images_train').  
 ""	Anstatt wie in vielen Beispielen das os Modul zu nutzen um durch Verzeichnise zu navigieren habe ich mich für die objektorientierte und modernere Version des pathlib Moduls entschieden.  
 	-dicom2nifti: Durch die mit Dicoms gefüllten vorher erstellten Patientenordner wird durchiteriert und es werden niftis für jeden ordner erstellt.  
 	-find empty: Niftis werden mit Nibabel geladen.  
@@ -89,17 +91,22 @@ $$		Torchinfo summary einbauen um der User*in eine bessere Visualisierung des Mo
 					 Der dice_value wird von 1 abgezogen so das eine Metric entsteht bei der die 1 das bestmögliche Ergbniss ist.  
 $$		train_step: Model muss noch gespeichert werden. Gibt train loss und train metrik zurück  
 		test_step: Gibt test loss und test metrik zurück  
+!!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren
 		calculate weights: Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
+
+---------utils-------------  
+	Funktionen:  
+		save_model: Übernimmt als Parameter das Model und ein Zielverzeichnis.  
+					Assert Anweisung ist zur Absicherung des Models mit richtiger Dateiendung vorgesehen. Falls weder .pth oder .pt asl endung genutzt wurden wird eine Exception geworfen, welche auf den Fehler mit einer Message hinweist.  
+					Falls das Zielverzeichnis nicht gefunden wird, wird es erstellt  
+!!					Mir ist es nicht gelungen den Modell Parameter als Monai zu Annotieren, habe PyTorch genommen  
+		
 					 
 
 
+------------------------------------------------------------  
+Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
 
 
-
-
-
-
-
-	
-label = label != 0 nur binäre segmentation in mutlisegmentationen wird das label nach verwendung des softmaxes auf die prediction direkt mit der prediction verglichen
-Softmax nur im Training verwenden
+------------------------------------------------------------  
+Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.  
