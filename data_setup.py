@@ -41,10 +41,6 @@ def create_groups(in_dir: str,
             
                 shutil.copy(file, output_path)
                 print(f'[INFO] File {file.name} was moved to {output_path}')
-                
-#create_groups(in_dir = in_dir,
-             # out_dir = out_dir,
-              #numb_slices = 20)
 
 def dcom2nifti(in_dir: str, 
                 out_dir: str):

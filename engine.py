@@ -6,6 +6,8 @@ from monai.losses import DiceLoss
 import monai
 import numpy as np
 import utils
+from pathlib import Path
+
 
 def dice_metric(prediction: torch.Tensor,
                 label: torch.Tensor) -> float:
@@ -46,7 +48,8 @@ def train_step(model: torch.nn.Module,
                dataloader: monai.data.DataLoader,
                loss_fn: monai.losses,
                optimizer: torch.optim.Optimizer,
-               device: torch.device) -> tuple[float, float]:
+               device: torch.device,
+               ) -> tuple[float, float]:
     '''
      Perform a training step using the provided model, dataloader, loss function, optimizer, and device.
      
@@ -61,10 +64,10 @@ def train_step(model: torch.nn.Module,
         train_loss: contains the mean loss of the train step
         train_metric: contain the mean dice accuracy of the train_step
     '''
-    model.train()
     train_loss: float= 0
     train_metric: float = 0
     
+    model.train()
     for batch, data in enumerate(dataloader):
         
         input: torch.Tensor
@@ -86,8 +89,6 @@ def train_step(model: torch.nn.Module,
     train_loss /= len(dataloader)
     train_metric /= len(dataloader)
     
-    print(f'[INFO] Batch: {batch} | Train loss: {train_loss} | Train metric: {train_metric}')
-    
     return train_loss, train_metric
 
 def test_step(model: torch.nn.Module,
@@ -107,10 +108,10 @@ def test_step(model: torch.nn.Module,
         test_loss: contains the mean loss of the test_step
         test_metric: contain the mean dice accuracy of the test step
     '''
-    model.eval()
     test_loss: float = 0
     test_metric: float = 0
     
+    model.eval()
     with torch.inference_mode():
         for batch, data in enumerate(dataloader):
             input: torch.Tensor
@@ -125,7 +126,7 @@ def test_step(model: torch.nn.Module,
             test_loss += loss.item()
             test_metric: float
             test_metric += dice_metric(y_preds, label)
-    print(f'[INFO] Testn loss: {test_loss} | Test metric: {test_metric}')
+    
     return test_loss, test_metric
 
 def train(model: torch.nn.Module,
@@ -160,7 +161,25 @@ def train(model: torch.nn.Module,
                'train_metric': [],
                'test_metric': []}
     
+    best_metric: float = -1
+    best_metric_epoch: int = -1
+    save_loss_train: list = []
+    save_metric_train: list = []
+    save_loss_test: list = []
+    save_metric_test: list = []
+    step: int = 0
+    model_path = Path(target_dir) / model_name
+    best_metric_dir: Path = Path(target_dir) / 'best_metric.txt'
+    
+    if model_path.is_file():
+        print(f'[INFO] Loading {model_name} weights from {model_path}.')
+        model = utils.load_weights(model = model,
+                                   target_dir = model_path)
+    if best_metric_dir.is_file():
+        print(f'[INFO] Loading best metric from {best_metric_dir}')
+        best_metric = utils.load_best_metric(target_dir = best_metric_dir)
     for epoch in tqdm(range(epochs)):
+        step += 1
         train_loss: float
         train_metric: float
         train_loss, train_metric = train_step(model = model,
@@ -169,24 +188,48 @@ def train(model: torch.nn.Module,
                                               optimizer = optimizer,
                                               device = device                                             
                                              )
-        #####################Save mode#############
+        print(f'\nE: {epoch} | Step: {step} of {len(train_dataloader)}\nTrain loss: {train_loss:.4f} | Train metric: {train_metric:.4f}\n{50 * "-"}\n')
+        save_loss_train.append(train_loss)
+        save_metric_train.append(train_metric)
+        utils.save_metric(name = 'train_loss',
+                          target_dir = target_dir,
+                          metric_list = save_loss_train)
+        utils.save_metric(name = 'train_metric',
+                          target_dir = target_dir,
+                          metric_list = save_metric_train)
         
-        utils.save_model(model = model,
-                         target_dir = target_dir,
-                         model_name = model_name)
         
-        ########################################
-        
-        test_loss: float
-        test_metric: float
-        test_loss, test_metric = test_step(model = model,
-                                           dataloader = test_dataloader,
-                                           loss_fn = loss_fn,
-                                           device = device)
+        if epoch % 5 == 0:
+            test_loss: float
+            test_metric: float
+            test_loss, test_metric = test_step(model = model,
+                                            dataloader = test_dataloader,
+                                            loss_fn = loss_fn,
+                                            device = device)
+            print(f'\nE: {epoch} | Step: {step} of {len(test_dataloader)}\nTest loss: {test_loss:.4f} | Test metric: {test_metric:.4f}\n{50 * "-"}\n')
+            save_loss_test.append(test_loss)
+            save_metric_test.append(test_metric)
+            utils.save_metric(name = 'test_loss',
+                            target_dir = target_dir,
+                            metric_list = save_loss_test)
+            utils.save_metric(name = 'test_metric',
+                            target_dir = target_dir,
+                            metric_list = save_metric_test)
+            if test_metric > best_metric:
+                best_metric = test_metric
+                best_metric_epoch = epoch + 1
+                utils.save_best_metric(target_dir = target_dir,
+                                       best_metric = best_metric)
+                utils.save_best_metric_info(target_dir = target_dir,
+                                    best_metric = best_metric,
+                                    best_metric_epoch = best_metric_epoch)
+                utils.save_model(model = model,
+                                target_dir = target_dir,
+                                model_name = model_name)
+            results['test_loss'].append(test_loss)
+            results['test_metric'].append(test_metric)
         
         results['train_loss'].append(train_loss)
         results['train_metric'].append(train_metric)
-        results['test_loss'].append(test_loss)
-        results['test_metric'].append(test_metric)
     
     return results

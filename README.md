@@ -30,7 +30,7 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-typing (deprecated) 
 		-tqdm  
 !!		-nii2dcm (um die anwendung konsistent in python zu haben)
-		-dicom2nifti  
+		-dicom2nifti
 	
 	
 ------Preprocess------  
@@ -63,9 +63,9 @@ Funktionen:
 												a_min, a_max = definiert ursprüngliche Intervallbereiche der Pixel. Pixelwerte außerhalb dieses Bereiches werden weggeschnitten.  
 												b_min, b_max = Zielintervallbereich in welchen die Pixel transformiert werden sollen.  
 												clip = Wenn auf True gesetzt werden die Werte die sich außerhalb des Zielintervalls befinden auf b_min oder b_max gesetzt.  
-						  Resize: spatial_size: Anzahl der Voxel.  
+!!						  Resize: spatial_size: Anzahl der Voxel. Es besteht die Möglichkeit, dass Spacingd und Resized miteinander interferieren, da Spacingd die Größe der Voxel skaliert, während Resized die Anzahl der Voxel verändert
 $$						  Einen Normalizer verwenden (z.b. transforms.NormalizeIntensity(keys = ['vol'], non_zero = True)  
-
+  
 ---------U-Net------------  
 	Parameter:  
 		spatial_dims: Anzahl der Bilddimensionen (3-D Bild)  
@@ -77,7 +77,7 @@ $$						  Einen Normalizer verwenden (z.b. transforms.NormalizeIntensity(keys = 
 		norm = welche Form der Normalisation zwischen den Schichten stattfindet. In dem Fall wird eine Batchnormalisierung auf die Aktivierungswerte bevor sie in die Aktivierungsfunktion gehen angewand.  
 $$		Die Layer des U-Nets lassen sich einfrieren, dies könnte für ein vortrainiertes Unet von nutzen sein (Falls die Layerstacks keine Eigennamen besitzen mit dem Index ansprechen)  
 $$		Torchinfo summary einbauen um der User*in eine bessere Visualisierung des Models zu liefern  
-
+  
 --------engine-------------    
 	Funktionen:  
 		dice_metric: Berechent eine Metrik um die genauigkeit des Models zu messen.  
@@ -89,24 +89,35 @@ $$		Torchinfo summary einbauen um der User*in eine bessere Visualisierung des Mo
 														  Klasse C = [0, 0, 1] zusammengefasster Vektor: [1, 1, 1]  
 					 Squared_pred: wenn True werden die logits oder predictions quadriert um die Unterschiede zwischen den predictions und labels zu verstärken  
 					 Der dice_value wird von 1 abgezogen so das eine Metric entsteht bei der die 1 das bestmögliche Ergbniss ist.  
-$$		train_step: Model muss noch gespeichert werden. Gibt train loss und train metrik zurück  
+$$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train metrik zurück  
 		test_step: Gibt test loss und test metrik zurück  
 !!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren
 		calculate weights: Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
-
----------utils-------------  
+  
+---------utils------------- 
+!!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)
 	Funktionen:  
 		save_model: Übernimmt als Parameter das Model und ein Zielverzeichnis.  
 					Assert Anweisung ist zur Absicherung des Models mit richtiger Dateiendung vorgesehen. Falls weder .pth oder .pt asl endung genutzt wurden wird eine Exception geworfen, welche auf den Fehler mit einer Message hinweist.  
 					Falls das Zielverzeichnis nicht gefunden wird, wird es erstellt  
 !!					Mir ist es nicht gelungen den Modell Parameter als Monai zu Annotieren, habe PyTorch genommen  
-		
-					 
-
+		load_weights: Übernimmt als Parameter das Modell und das Verzeichnis unter dem die Gewichte gespeichert sind.  
+					  Gibt ein Feedback ob das Modell none ist oder nicht  
+!!					  Mir ist es nicht gelungen den Modell Parameter als Monai zu Annotieren, habe PyTorch genommen.  
+		save_metric: Speichert das durchschnittliche loss und die durchschnittliche dice metric in einer jeweiligen numpy Datei.  
+		save_best_metric: Beste Metric wird als Textdatei gespeichert. Wird im Modell genutzt um Aktuelle Metric mit der beten Metric zu vergleichen.  
+						  Isst die Aktuelle Metric präziser ersetzt sie die Beste Metrik und das Modell wird gespeichert.  
+		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
+		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
+  		
+---------predictions-----------
+	Es wir ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
+	Das hat den Vorteil das wie bei anderen Transformern die daten gleichgemacht werden, es ist auch möglich die Aktivierungsmuster des Modells zu visualisieren.  
+  
 
 ------------------------------------------------------------  
 Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
-
+  
 
 ------------------------------------------------------------  
 Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.  
