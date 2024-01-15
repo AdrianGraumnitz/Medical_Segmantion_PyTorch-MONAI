@@ -31,6 +31,7 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-tqdm  
 !!		-nii2dcm (um die anwendung konsistent in python zu haben)
 		-dicom2nifti
+		-tensorboard
 	
 	
 ------Preprocess------  
@@ -41,13 +42,15 @@ Funktionen:
 					numberfolders = teilt den inhalt eines underverzeichnisses durch die variabel Number_Slices.  
 					Ich würde gern ein Feedback bekommen wenn der Pfad schon existiert, klappt noch nicht.  
 					Wichtig: der Pfad muss auf das Train/Test directory zeigen, nicht auf die unterordner ('test_data' / 'dicom' /'images_train').  
+					Dateien müssen vorher in unterordner (z.B.: "heart_0") gesteckt werden aber die Funktion greift auf den überordner ("train") zu
 ""	Anstatt wie in vielen Beispielen das os Modul zu nutzen um durch Verzeichnise zu navigieren habe ich mich für die objektorientierte und modernere Version des pathlib Moduls entschieden.  
 	-dicom2nifti: Durch die mit Dicoms gefüllten vorher erstellten Patientenordner wird durchiteriert und es werden niftis für jeden ordner erstellt.  
 	-find empty: Niftis werden mit Nibabel geladen.  
 				 get_fdata = gibt ein numpy array mit den voxelwerten des Volumens zurück.  
 				 len(unique) > 2 = zählt die eindeutigen werte und gibt True zurück wenn es mehr als zwei sind.  
 ??				 Habe die Funktion mit .unlink() ergänzt, sollte alle leeren Bilder löschen.  
-	-set_seed: Zufallswerte für berechnung auf cpu/gpu festlegen.  
+	-set_seed: Zufallswerte für berechnung auf cpu/gpu festlegen. 
+	-edit_label: Funktion erkennt die Anzahl der unique Werte (Grauwerte) und maped sie zu einem Index in ein Dictionary.  
 !!	-prepare: über parameter informieren, sind die Werte gut?  
 !!			  Die Pfade könnten Probleme verursachen.  
 			  Dictionaries werden mit list comprehension und der zip funktion erstellt. Zip Funktion erstellt einen iterator von paarweisen Tuples.  
@@ -63,7 +66,7 @@ Funktionen:
 												a_min, a_max = definiert ursprüngliche Intervallbereiche der Pixel. Pixelwerte außerhalb dieses Bereiches werden weggeschnitten.  
 												b_min, b_max = Zielintervallbereich in welchen die Pixel transformiert werden sollen.  
 												clip = Wenn auf True gesetzt werden die Werte die sich außerhalb des Zielintervalls befinden auf b_min oder b_max gesetzt.  
-!!						  Resize: spatial_size: Anzahl der Voxel. Es besteht die Möglichkeit, dass Spacingd und Resized miteinander interferieren, da Spacingd die Größe der Voxel skaliert, während Resized die Anzahl der Voxel verändert
+!!						  Resize: spatial_size: Anzahl der Voxel. Es besteht die Möglichkeit, dass Spacingd und Resized miteinander interferieren, da Spacingd die Größe der Voxel skaliert, während Resized die Anzahl der Voxel verändert  
 $$						  Einen Normalizer verwenden (z.b. transforms.NormalizeIntensity(keys = ['vol'], non_zero = True)  
   
 ---------U-Net------------  
@@ -91,11 +94,12 @@ $$		Torchinfo summary einbauen um der User*in eine bessere Visualisierung des Mo
 					 Der dice_value wird von 1 abgezogen so das eine Metric entsteht bei der die 1 das bestmögliche Ergbniss ist.  
 $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train metrik zurück  
 		test_step: Gibt test loss und test metrik zurück  
-!!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren
+!!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren  
+			   Habe ich mit Summary writer ergänzt  
 		calculate weights: Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
   
 ---------utils------------- 
-!!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)
+!!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)  
 	Funktionen:  
 		save_model: Übernimmt als Parameter das Model und ein Zielverzeichnis.  
 					Assert Anweisung ist zur Absicherung des Models mit richtiger Dateiendung vorgesehen. Falls weder .pth oder .pt asl endung genutzt wurden wird eine Exception geworfen, welche auf den Fehler mit einer Message hinweist.  
@@ -109,15 +113,22 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 						  Isst die Aktuelle Metric präziser ersetzt sie die Beste Metrik und das Modell wird gespeichert.  
 		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
 		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
+		create_writer: Schreibt die Loss und Dicemetriken in Verzeichnis, lässt sich mit Tensorboard visualisieren.  
   		
 ---------predictions-----------
-	Es wir ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
+	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
 	Das hat den Vorteil das wie bei anderen Transformern die daten gleichgemacht werden, es ist auch möglich die Aktivierungsmuster des Modells zu visualisieren.  
-  
-
-------------------------------------------------------------  
-Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
-  
-
-------------------------------------------------------------  
-Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.  
+	Ich habe die Metriken (Dice loss, dice metric) mit matplotlic visualisiert.  
+!!	sliding_window_inference: Anstatt den Input direkt in das Modell zu geben um eine Prediction auf das ganze Bild in einem Durchgang zu bekommen nutze ich die sliding_window_inference methode. Diese iteriert in kleinen Schritten über das Bild. Anstatt in einem schritt an das Modell zu übergeben,  
+							  wird das Bild in kleine überlappende Fenster zerteilt und das Modell wird für jedes dieser Fenster einzeln aufgerufen. Dies kann zu genaueren Ergebnissen führen.  
+							  Möglicherweise benötige ich die methode nicht da mein Bild nicht so groß ist und momentan trotzdem das ganze Bild mit einmal reingesteckt wird, das macht die ganze Sache sinnlos.  
+							  Ich könnte für eine höhere genauigkeit die Roi_size (größe der Patches) senken.  
+							  Die sw_batch_size gibt wie viele patches auf einmal in das Netz gesteckt werden.   
+!!	Die Sigmoid Aktivierungsfunktion nach dem Forwardpass wandelt den Output in werte zwischen 0 - 1 um. Vielleicht ist das nicht nötig und ich kann die Werte auch so schon nutzen. Durch Skalierung zwischen 0 und 1 Werten die Plots sehr Hell.   
+	Beim Plotten ist es nicht erforderlich eine Tiefendimension hinzuzufügen da ein Grauwertbild keine Tiefe besitzt.  
+	[0, 0, :, :, i]
+	1. Batchdimension  
+	2. Channeldimension (ist der einzige Channel deshalb 0)  
+	3. Höhe  
+	4. Breite  
+	5. Index  

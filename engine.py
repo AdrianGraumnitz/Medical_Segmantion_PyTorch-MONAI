@@ -7,6 +7,7 @@ import monai
 import numpy as np
 import utils
 from pathlib import Path
+from torch.utils import tensorboard
 
 
 def dice_metric(prediction: torch.Tensor,
@@ -83,8 +84,10 @@ def train_step(model: torch.nn.Module,
         
         train_loss: float
         train_loss += loss.item()
+        metric: float = dice_metric(y_preds, label)
         train_metric: float
-        train_metric += dice_metric(y_preds, label)
+        train_metric += metric
+        print(f'Step {batch + 1} of {len(dataloader)} | train loss: {loss:.4f} | train metric {metric:.4f}')
         
     train_loss /= len(dataloader)
     train_metric /= len(dataloader)
@@ -124,8 +127,12 @@ def test_step(model: torch.nn.Module,
             
             test_loss: float
             test_loss += loss.item()
+            metric: float = dice_metric(y_preds, label)
             test_metric: float
-            test_metric += dice_metric(y_preds, label)
+            test_metric += metric
+            print(f'Step: {batch + 1} of {len(dataloader)} | test loss: {loss:.4f} | test metric: {metric:.4f}')
+        test_loss /= len(dataloader)
+        test_metric /= len(dataloader)
     
     return test_loss, test_metric
 
@@ -137,7 +144,8 @@ def train(model: torch.nn.Module,
           epochs: int,
           device: torch.device,
           target_dir: str,
-          model_name: str) -> dict[str, list]:
+          model_name: str,
+          writer: torch.utils.tensorboard.writer.SummaryWriter) -> dict[str, list]:
     '''
     Trains a PyTorch/Monai model using the provided data and configuration
     
@@ -188,7 +196,7 @@ def train(model: torch.nn.Module,
                                               optimizer = optimizer,
                                               device = device                                             
                                              )
-        print(f'\nE: {epoch} | Step: {step} of {len(train_dataloader)}\nTrain loss: {train_loss:.4f} | Train metric: {train_metric:.4f}\n{50 * "-"}\n')
+        print(f'\n[INFO] E: {epoch} | Epoch train loss: {train_loss:.4f} | Epoch train metric: {train_metric:.4f}\n{50 * "-"}\n')
         save_loss_train.append(train_loss)
         save_metric_train.append(train_metric)
         utils.save_metric(name = 'train_loss',
@@ -206,7 +214,7 @@ def train(model: torch.nn.Module,
                                             dataloader = test_dataloader,
                                             loss_fn = loss_fn,
                                             device = device)
-            print(f'\nE: {epoch} | Step: {step} of {len(test_dataloader)}\nTest loss: {test_loss:.4f} | Test metric: {test_metric:.4f}\n{50 * "-"}\n')
+            print(f'\n[INFO] E: {epoch} | Epoch test loss: {test_loss:.4f} | Epoch test metric: {test_metric:.4f}\n{50 * "-"}\n')
             save_loss_test.append(test_loss)
             save_metric_test.append(test_metric)
             utils.save_metric(name = 'test_loss',
@@ -231,5 +239,17 @@ def train(model: torch.nn.Module,
         
         results['train_loss'].append(train_loss)
         results['train_metric'].append(train_metric)
-    
+
+        writer.add_scalars(main_tag = 'Loss',
+                           tag_scalar_dict = {'train_loss': train_loss,
+                                              'test_loss': test_loss},
+                           global_step = step)
+        writer.add_scalars(main_tag = 'Dice metric',
+                           tag_scalar_dict = {'train_metric': train_metric,
+                                              'test_metric': test_metric},
+                           global_step = step)
+        #writer.add_graph(model = model,
+                         #input_to_model = torch.randn(1, 1, 128, 128, 64))
+    writer.flush()
+    writer.close()
     return results

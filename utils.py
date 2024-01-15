@@ -2,6 +2,8 @@ import torch
 from pathlib import Path
 import numpy as np
 from datetime import datetime
+from torch.utils import tensorboard
+from datetime import datetime
 
 def save_model(model: torch.nn.Module,
                target_dir: str,
@@ -108,4 +110,10 @@ def load_best_metric(target_dir: str) -> float:
     
     return best_metric
             
+def create_writer(model_name: str,
+                  extra: str = None):
+    timestamp: datetime = datetime.now().strftime("%Y-%m-%d")
     
+    log_dir = Path.cwd().parent / 'runs' / timestamp / model_name / extra
+    print(f'[INFO Created SummaryWriter saving to {log_dir}]')
+    return tensorboard.SummaryWriter(log_dir = log_dir)
