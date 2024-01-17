@@ -8,6 +8,7 @@ import numpy as np
 import utils
 from pathlib import Path
 from torch.utils import tensorboard
+import data_setup
 
 
 def dice_metric(prediction: torch.Tensor,
@@ -74,17 +75,15 @@ def train_step(model: torch.nn.Module,
         input: torch.Tensor
         label: torch.Tensor
         input, label = data['vol'].to(device), data['seg'].to(device)
-        y_logits: torch.Tensor = model(input)
-        y_preds: torch.Tensor = torch.softmax(y_logits, dim = 1)
         
+        y_logits: torch.Tensor = model(input)
         loss: torch.Tensor = loss_fn(y_logits, label)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
         train_loss: float
         train_loss += loss.item()
-        metric: float = dice_metric(y_preds, label)
+        metric: float = dice_metric(y_logits, label)
         train_metric: float
         train_metric += metric
         print(f'Step {batch + 1} of {len(dataloader)} | train loss: {loss:.4f} | train metric {metric:.4f}')
@@ -119,15 +118,13 @@ def test_step(model: torch.nn.Module,
         for batch, data in enumerate(dataloader):
             input: torch.Tensor
             label: torch.Tensor
-            input, label = data['vol'].to(device), data['seg'].to(device)            
+            input, label = data['vol'].to(device), data['seg'].to(device)
+                        
             y_logits: torch.Tensor = model(input)
-            y_preds: torch.Tensor = torch.softmax(y_logits, dim = 1)
-            
             loss: torch.Tensor = loss_fn(y_logits, label)
-            
             test_loss: float
             test_loss += loss.item()
-            metric: float = dice_metric(y_preds, label)
+            metric: float = dice_metric(y_logits, label)
             test_metric: float
             test_metric += metric
             print(f'Step: {batch + 1} of {len(dataloader)} | test loss: {loss:.4f} | test metric: {metric:.4f}')
@@ -145,24 +142,31 @@ def train(model: torch.nn.Module,
           device: torch.device,
           target_dir: str,
           model_name: str,
-          writer: torch.utils.tensorboard.writer.SummaryWriter) -> dict[str, list]:
+          writer: torch.utils.tensorboard.writer.SummaryWriter,
+          manual_seed: bool = True) -> dict[str, list]:
     '''
     Trains a PyTorch/Monai model using the provided data and configuration
     
     Args:
-        model (torch.nn.Module): The neural network model to be trained.
-        train_dataloader (monai.data.DataLoader): DataLoader for the training dataset.
-        test_dataloader (monai.data.DataLoader): DataLoader for the testing dataset.
-        loss_fn (monai.losses): Loss function for optimization.
-        optimizer (torch.optim.Optimizer): Optimizer for updating model parameters.
-        epochs (int): Number of training epochs.
-        device (torch.device): Device (cpu or cuda) on which to perform training.
-        target_dir (str): Directory for saving the trained model.
-        model_name (str): Filename for the saved model (should include '.pth' or '.pt' extension).
+        model: The neural network model to be trained.
+        train_dataloader: DataLoader for the training dataset.
+        test_dataloader: DataLoader for the testing dataset.
+        loss_fn: Loss function for optimization.
+        optimizer: Optimizer for updating model parameters.
+        epochs: Number of training epochs.
+        device: Device (cpu or cuda) on which to perform training.
+        target_dir: Directory for saving the trained model.
+        model_name: Filename for the saved model (should include '.pth' or '.pt' extension).
+        writer: Creates a summary writer instance for tensorboard visualisation
+        manual_seed: If True, sets a manual seed for better reproducibility.
         
     Returns:
         dict[str, list]: Dictionary containing lists of training and testing loss/metric values.
     '''
+    
+    if manual_seed:
+        utils.set_seed()
+        
     
     results: dict[str, list] = {'train_loss': [],
                'test_loss': [],

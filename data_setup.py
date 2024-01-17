@@ -10,7 +10,7 @@ import torch
 from monai import transforms
 from monai.data import DataLoader, Dataset, CacheDataset
 import monai
-
+import utils
 
 
 #in_dir: Path = Path(__file__).parent
@@ -98,16 +98,6 @@ def edit_label(in_dir: str,
             tensor[tensor == original_val] = mapped_val
         nib.save(nib.Nifti1Image(tensor.numpy(), affine = None), Path(out_dir) / nifti.name)
         value_mapping.clear()
-
-def set_seed(seed: int = 42):
-    '''
-    Set the random seed for PyTorch operations to ensure reproducibility.
-    
-    Args:
-        seed: The desired random seed. Default is 42.
-    '''
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
     
 def prepare(in_dir: str, 
             pixdim: tuple = (1.5, 1.5, 1.0), 
@@ -141,7 +131,7 @@ def prepare(in_dir: str,
         
     '''
     if manual_seed:
-        set_seed()
+        utils.set_seed()
     
     path_train_volumes: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_volumes').glob('*.nii.gz'))
     path_train_segmentations: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_segmentations').glob('*.nii.gz'))
@@ -155,22 +145,22 @@ def prepare(in_dir: str,
     train_transform: transforms = transforms.Compose([
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
-        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
-        transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
-        transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size, mode = ('bilinear', 'nearest')),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = - 200, a_max = 200, b_min = 0., b_max = 1., clip = True),
+        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = (1.5, 1.5, 1.0), mode = ('bilinear', 'nearest')),
+        transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
+        transforms.Resized(keys = ['vol', 'seg'], spatial_size = [128, 128, 64], mode = ('bilinear', 'nearest')),    
         transforms.ToTensor()
     ])
     
     test_transform: transforms = transforms.Compose([
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
-        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
-        transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
-        transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size, mode = ('bilinear', 'nearest')),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = - 200, a_max = 200, b_min = 0., b_max = 1., clip = True),
+        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = (1.5, 1.5, 1.0), mode = ('bilinear', 'nearest')),
+        transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
+        transforms.Resized(keys = ['vol', 'seg'], spatial_size = [128, 128, 64], mode = ('bilinear', 'nearest')),    
         transforms.ToTensor()
     ])
     

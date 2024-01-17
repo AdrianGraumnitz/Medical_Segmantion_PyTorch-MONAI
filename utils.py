@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 from torch.utils import tensorboard
 from datetime import datetime
+import nibabel as nib
 
 def save_model(model: torch.nn.Module,
                target_dir: str,
@@ -111,9 +112,45 @@ def load_best_metric(target_dir: str) -> float:
     return best_metric
             
 def create_writer(model_name: str,
-                  extra: str = None):
-    timestamp: datetime = datetime.now().strftime("%Y-%m-%d")
+                  extra: str = None) -> tensorboard.SummaryWriter:
+    '''
+    Create and return a Tensorboard SummaryWriter for logging.
     
+    Args:
+        model_name: Name of the model
+        extra: Additional information to append to the log directory.
+        
+    Returns:
+        tensorboard.SummaryWriter: SummaryWriter object
+    '''
+    
+    timestamp: datetime = datetime.now().strftime("%Y-%m-%d")
     log_dir = Path.cwd().parent / 'runs' / timestamp / model_name / extra
     print(f'[INFO Created SummaryWriter saving to {log_dir}]')
+    
     return tensorboard.SummaryWriter(log_dir = log_dir)
+
+def save_nifti(prediction: torch.tensor, 
+               out_dir: str, 
+               name: str = 'prediction'):
+    '''
+    Save a 3D prediction tensor as a Nifit file.
+    
+    Args:
+        prediction: 3D tensor representing the prediction.
+        out_dir: Directory where the Nifit file will be saved.
+        name: Name of the saved Nifti file
+    '''
+    print(f'[INFO] Saving {name} Nifti file to {out_dir}')
+    nib.save(nib.Nifti1Image(prediction.squeeze().cpu().numpy().astype(float), affine = None), Path(out_dir) / f'{name}nii.gz')
+
+def set_seed(seed: int = 42):
+    '''
+    Set the random seed for PyTorch operations to ensure reproducibility.
+    
+    Args:
+        seed: The desired random seed.
+    '''
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    print(f'[INFO] Set random seed to {seed}')
