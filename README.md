@@ -96,7 +96,7 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 		test_step: Gibt test loss und test metrik zurück  
 !!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren  
 			   Habe ich mit Summary writer ergänzt  
-		calculate weights: Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
+$$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
   
 ---------utils------------- 
 !!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)  
@@ -114,6 +114,7 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
 		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
 		create_writer: Schreibt die Loss und Dicemetriken in Verzeichnis, lässt sich mit Tensorboard visualisieren.  
+!!		save_nifti: Prediction wird in einer Nifti-Datei gespeichert. -> Soll mehr als einen Datensatz übernehmen.  
   		
 ---------predictions-----------
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
@@ -131,4 +132,4 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 	2. Channeldimension (ist der einzige Channel deshalb 0)  
 	3. Höhe  
 	4. Breite  
-	5. Index  
+	5. Index 
