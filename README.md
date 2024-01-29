@@ -32,6 +32,8 @@ Virtuelle Umgebung in Anaconda programmiert:
 !!		-nii2dcm (um die anwendung konsistent in python zu haben)
 		-dicom2nifti
 		-tensorboard
+		-icecream (debuggen)
+		-mlxtend (plotting confusion matrix)
 	
 	
 ------Preprocess------  
@@ -114,7 +116,7 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
 		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
 		create_writer: Schreibt die Loss und Dicemetriken in Verzeichnis, lässt sich mit Tensorboard visualisieren.  
-!!		save_nifti: Prediction wird in einer Nifti-Datei gespeichert. -> Soll mehr als einen Datensatz übernehmen.  
+!!++	save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.  
   		
 ---------predictions-----------
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
@@ -132,4 +134,6 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	2. Channeldimension (ist der einzige Channel deshalb 0)  
 	3. Höhe  
 	4. Breite  
-	5. Index 
+	5. Index  
+	
+ 

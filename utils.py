@@ -130,19 +130,20 @@ def create_writer(model_name: str,
     
     return tensorboard.SummaryWriter(log_dir = log_dir)
 
-def save_nifti(prediction: torch.tensor, 
+def save_nifti(prediction_list: list, 
                out_dir: str, 
                name: str = 'prediction'):
     '''
     Save a 3D prediction tensor as a Nifit file.
     
     Args:
-        prediction: 3D tensor representing the prediction.
-        out_dir: Directory where the Nifit file will be saved.
-        name: Name of the saved Nifti file
+        prediction: List of 3D tensors to be saved as NIfTI files.
+        out_dir: Directory where the NIfTI files will be saved.
+        name: Prefix for the saved NIfTI files. Defaults to 'prediction'.
     '''
-    print(f'[INFO] Saving {name} Nifti file to {out_dir}')
-    nib.save(nib.Nifti1Image(prediction.squeeze().cpu().numpy().astype(float), affine = None), Path(out_dir) / f'{name}nii.gz')
+    for i, data in enumerate(prediction_list):
+        print(f'[INFO] Saving {name}_{i} Nifti file to {out_dir}')
+        nib.save(nib.Nifti1Image(data.squeeze().cpu().numpy().astype(float), affine = None), Path(out_dir) / f'{name}_{i}.nii.gz')
 
 def set_seed(seed: int = 42):
     '''
