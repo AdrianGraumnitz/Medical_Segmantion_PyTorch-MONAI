@@ -98,11 +98,12 @@ def edit_label(in_dir: str,
             tensor[tensor == original_val] = mapped_val
         nib.save(nib.Nifti1Image(tensor.numpy(), affine = None), Path(out_dir) / nifti.name)
         value_mapping.clear()
+        Path(nifti).unlink()
     
 def prepare(in_dir: str, 
             pixdim: tuple = (1.5, 1.5, 1.0), 
             a_min: float = - 200, 
-            a_max: float = 200, 
+            a_max: float = 1000, 
             b_min: float = 0.0, 
             b_max: float = 1.0, 
             clip: bool = True , 
@@ -146,10 +147,10 @@ def prepare(in_dir: str,
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
-        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = - 200, a_max = 1000, b_min = 0., b_max = 1., clip = True),
-        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = (1.5, 1.5, 1.0), mode = ('bilinear', 'nearest')),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
+        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
         transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.Resized(keys = ['vol', 'seg'], spatial_size = [128, 128, 64], mode = ('bilinear', 'nearest')),    
+        transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size, mode = ('bilinear', 'nearest')),    
         transforms.ToTensor()
     ])
     
@@ -157,10 +158,10 @@ def prepare(in_dir: str,
         transforms.LoadImaged(keys = ['vol', 'seg']),
         transforms.EnsureChannelFirstd(keys = ['vol', 'seg']),
         transforms.CropForegroundd(keys = ['vol', 'seg'], source_key = 'vol'),
-        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = - 200, a_max = 1000, b_min = 0., b_max = 1., clip = True),
-        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = (1.5, 1.5, 1.0), mode = ('bilinear', 'nearest')),
+        transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
+        transforms.Spacingd(keys = ['vol', 'seg'], pixdim = pixdim, mode = ('bilinear', 'nearest')),
         transforms.Orientationd(keys = ['vol', 'seg'], axcodes = 'RAS'),
-        transforms.Resized(keys = ['vol', 'seg'], spatial_size = [128, 128, 64], mode = ('bilinear', 'nearest')),    
+        transforms.Resized(keys = ['vol', 'seg'], spatial_size = spatial_size, mode = ('bilinear', 'nearest')),    
         transforms.ToTensor()
     ])
     

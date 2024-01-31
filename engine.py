@@ -9,6 +9,8 @@ import utils
 from pathlib import Path
 from torch.utils import tensorboard
 import data_setup
+from monai import inferers
+import monai
 
 
 def dice_metric(prediction: torch.Tensor,
@@ -86,7 +88,7 @@ def train_step(model: torch.nn.Module,
         metric: float = dice_metric(y_logits, label)
         train_metric: float
         train_metric += metric
-        print(f'Step {batch + 1} of {len(dataloader)} | train loss: {loss:.4f} | train metric {metric:.4f}')
+        print(f'Step {batch + 1} of {len(dataloader)} | train loss: {loss:.4f} | train metric: {100 * metric:.2f}%')
         
     train_loss /= len(dataloader)
     train_metric /= len(dataloader)
@@ -127,7 +129,7 @@ def test_step(model: torch.nn.Module,
             metric: float = dice_metric(y_logits, label)
             test_metric: float
             test_metric += metric
-            print(f'Step: {batch + 1} of {len(dataloader)} | test loss: {loss:.4f} | test metric: {metric:.4f}')
+            print(f'Step: {batch + 1} of {len(dataloader)} | test loss: {loss:.4f} | test metric: {100 * metric:.2f}%')
         test_loss /= len(dataloader)
         test_metric /= len(dataloader)
     
@@ -200,7 +202,7 @@ def train(model: torch.nn.Module,
                                               optimizer = optimizer,
                                               device = device                                             
                                              )
-        print(f'\n[INFO] E: {epoch} | Epoch train loss: {train_loss:.4f} | Epoch train metric: {train_metric:.4f}\n{50 * "-"}\n')
+        print(f'\n[INFO] E: {epoch} | Epoch train loss: {train_loss:.4f} | Epoch train metric: {100 * train_metric:.2f}%\n{50 * "-"}\n')
         save_loss_train.append(train_loss)
         save_metric_train.append(train_metric)
         utils.save_metric(name = 'train_loss',
@@ -218,7 +220,7 @@ def train(model: torch.nn.Module,
                                             dataloader = test_dataloader,
                                             loss_fn = loss_fn,
                                             device = device)
-            print(f'\n[INFO] E: {epoch} | Epoch test loss: {test_loss:.4f} | Epoch test metric: {test_metric:.4f}\n{50 * "-"}\n')
+            print(f'\n[INFO] E: {epoch} | Epoch test loss: {test_loss:.4f} | Epoch test metric: {100 * test_metric:.2f}%\n{50 * "-"}\n')
             save_loss_test.append(test_loss)
             save_metric_test.append(test_metric)
             utils.save_metric(name = 'test_loss',
@@ -257,3 +259,38 @@ def train(model: torch.nn.Module,
     writer.flush()
     writer.close()
     return results
+
+def perform_inference(model: torch.nn.Module,
+                      test_patient: torch.Tensor,
+                      roi_size: tuple = (128, 128, 64),
+                      sw_batch_size: int = 4,
+                      device: torch.device = 'cuda' if torch.cuda.is_available() else 'cpu') -> tuple[torch.Tensor, torch.Tensor]:
+    '''
+    Performs inference using the sliding window technique on the given input volume.
+
+    Parameters:
+    - model: The PyTorch model used for prediction.
+    - test_patient: The input volume on which to perform inference.
+    - roi_size: Region of interest size. Default is (128, 128, 64).
+    - sw_batch_size: Sliding window batch size. Default is 4.
+    - device: The device on which to perform inference.
+
+    Returns:
+    - torch.Tensor: The output of the model
+    - torch.Tensor: The predicted segmentation result.
+    '''
+    with torch.inference_mode():
+        
+        t_volume = test_patient['vol'].to(device)
+        test_outputs = inferers.sliding_window_inference(inputs = t_volume,
+                                                         roi_size = roi_size,
+                                                         sw_batch_size = sw_batch_size,
+                                                         predictor = model
+                                                        )
+        prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1).unsqueeze(dim = 0)
+        
+        print(f'[INFO]\nImage shape: {test_patient["vol"].shape}\nLabel shape: {test_patient["seg"].shape}\nBinary segmentation shape: {test_outputs.shape}\nMulti segmentation shape: {prediction.shape}')
+        
+        return prediction, test_outputs
+    
+

@@ -5,6 +5,11 @@ from datetime import datetime
 from torch.utils import tensorboard
 from datetime import datetime
 import nibabel as nib
+import torchmetrics
+from mlxtend import plotting
+from monai import inferers, transforms
+import monai
+import matplotlib.pyplot as plt
 
 def save_model(model: torch.nn.Module,
                target_dir: str,
@@ -155,3 +160,90 @@ def set_seed(seed: int = 42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     print(f'[INFO] Set random seed to {seed}')
+
+def plot_confusion_matrix(model: torch.nn.Module,
+                          test_dataloader: monai.data.DataLoader,
+                          class_names: list,
+                          roi_size: tuple = (128, 128, 64),
+                          sw_batch_size: int = 4) -> list:
+    '''
+    Plots a confusion matrix for multiclass segmentation using predicted and true labels.
+
+    Parameters:
+    - class_names: A list of class names corresponding to the categories.
+    - model: The PyTorch model used for prediction.
+    - roi_size: Region of interest size. Default is (128, 128, 64).
+    - sw_batch_size: Sliding window batch size. Default is 4.
+    
+    Return:
+    - list: Containing the test predictions
+    '''
+    
+    prediction_list = []
+    label_list = []
+    model.eval()
+    with torch.inference_mode():
+        for data in test_dataloader:
+            t_volume = data['vol']
+            test_outputs = inferers.sliding_window_inference(inputs = t_volume,
+                                                        roi_size = roi_size,
+                                                        sw_batch_size = sw_batch_size,
+                                                        predictor = model
+                                                        )
+            prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1)
+            prediction_list.append(prediction)
+            label_list.append(data['seg'].squeeze(dim = 0))
+        
+    prediction_cat_tensor = torch.cat(prediction_list)
+    label_cat_tensor = torch.cat(label_list)
+    
+    confmat = torchmetrics.ConfusionMatrix(task = 'multiclass',
+                                        num_classes = len(class_names))
+    confmat_tensor = confmat(preds = prediction_cat_tensor,
+                            target = label_cat_tensor)
+
+    plotting.plot_confusion_matrix(conf_mat = confmat_tensor.numpy(),
+                                    figsize = (10, 7),
+                                    show_absolute = True,
+                                    show_normed = True,
+                                    colorbar = True,
+                                    class_names = class_names)
+    return prediction_list 
+
+def plot_image_label_prediction(test_patient: torch.Tensor,
+                                prediction: torch.Tensor,
+                                test_outputs: torch.Tensor,
+                                start_image_index: int = 50,
+                                threshold: float = 0.53):
+    """
+    Plots images, labels, binary segmentations, and multi-segmentations for visual inspection.
+
+    Parameters:
+    - test_patient: The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
+    - prediction: The predicted segmentation result.
+    - test_outputs: The output tensor from the model.
+    - start_image_index: Index of the first image for visualization. Default is 50.
+    - threshold: Threshold for binary segmentation. Default is 0.53.
+    """
+        
+    sigmoid_activation = transforms.Activations(sigmoid = True)
+    
+    test_outputs = sigmoid_activation(test_outputs)
+    test_outputs = 1 - test_outputs
+    test_outputs = test_outputs > threshold
+
+    for i in range(5):
+            plt.figure('check', (18, 6))
+            plt.subplot(1, 4, 1)
+            plt.title(f'Image {i}')
+            plt.imshow(test_patient['vol'][0, 0, :, :, i + start_image_index], cmap = 'gray')
+            plt.subplot(1, 4, 2)
+            plt.title(f'Label {i}')
+            plt.imshow(test_patient['seg'][0, 0, :, :, i + start_image_index], cmap ='gray')
+            plt.subplot(1, 4, 3)
+            plt.title(f'Binary segmentation {i}')
+            plt.imshow(test_outputs.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+            plt.subplot(1, 4, 4)
+            plt.title(f'Multi segmentation {i}')
+            plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+            plt.show()

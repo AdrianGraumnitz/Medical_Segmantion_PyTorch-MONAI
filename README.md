@@ -99,6 +99,7 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 !!		train: save_model Funktion integriert. Optisch hervorgehoben, später besser integrieren  
 			   Habe ich mit Summary writer ergänzt  
 $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
+		perform_inference: Funktion welchen einen prediction Datensatz zurück gibt.  
   
 ---------utils------------- 
 !!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)  
@@ -111,13 +112,15 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 					  Gibt ein Feedback ob das Modell none ist oder nicht  
 !!					  Mir ist es nicht gelungen den Modell Parameter als Monai zu Annotieren, habe PyTorch genommen.  
 		save_metric: Speichert das durchschnittliche loss und die durchschnittliche dice metric in einer jeweiligen numpy Datei.  
-		save_best_metric: Beste Metric wird als Textdatei gespeichert. Wird im Modell genutzt um Aktuelle Metric mit der beten Metric zu vergleichen.  
-						  Isst die Aktuelle Metric präziser ersetzt sie die Beste Metrik und das Modell wird gespeichert.  
+		save_best_metric: Beste Metric wird als Textdatei gespeichert. Wird im Modell genutzt um Aktuelle Metric mit der besten Metric zu vergleichen.  
+						  Ist die Aktuelle Metric präziser ersetzt sie die Beste Metrik und das Modell wird gespeichert.  
 		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
 		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
 		create_writer: Schreibt die Loss und Dicemetriken in Verzeichnis, lässt sich mit Tensorboard visualisieren.  
 !!++	save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.  
-  		
+		plot_confusion_matrix: Erstellt eine Confusion Matrix welche die Labels und die predictions gegenüberstellt.  
+		plot_image_label_prediction: Plottet mit hilfe von Matplolib einen Ausgewählten Datensatz (Image, label, binary prediction, multi prediction)  
+		
 ---------predictions-----------
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
 	Das hat den Vorteil das wie bei anderen Transformern die daten gleichgemacht werden, es ist auch möglich die Aktivierungsmuster des Modells zu visualisieren.  
@@ -136,4 +139,6 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	4. Breite  
 	5. Index  
 	
- 
+---------Tensorboard Tutorial--------
+	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs 
+	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007
