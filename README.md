@@ -101,7 +101,7 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
 		perform_inference: Funktion welchen einen prediction Datensatz zurück gibt.  
   
----------utils------------- 
+---------utils-------------  
 !!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)  
 	Funktionen:  
 		save_model: Übernimmt als Parameter das Model und ein Zielverzeichnis.  
@@ -121,7 +121,7 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 		plot_confusion_matrix: Erstellt eine Confusion Matrix welche die Labels und die predictions gegenüberstellt.  
 		plot_image_label_prediction: Plottet mit hilfe von Matplolib einen Ausgewählten Datensatz (Image, label, binary prediction, multi prediction)  
 		
----------predictions-----------
+---------predictions-----------  
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
 	Das hat den Vorteil das wie bei anderen Transformern die daten gleichgemacht werden, es ist auch möglich die Aktivierungsmuster des Modells zu visualisieren.  
 	Ich habe die Metriken (Dice loss, dice metric) mit matplotlic visualisiert.  
@@ -139,6 +139,36 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	4. Breite  
 	5. Index  
 	
----------Tensorboard Tutorial--------
-	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs 
-	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007
+---------Tensorboard Tutorial--------  
+	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs  
+	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007  
+
+------------------------------------------------------------  
+Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
+  
+
+------------------------------------------------------------  
+Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.   
+
+
+
+-------------------------------------------------------------
+Good to know:
+	Die features im Netz spiegeln die Channels/Tiefendimension wieder (1, 3, 128, 128) -> 3 sind die Inputfeatures
+	U-Net: Encoder/Decoder. Im Encoder werden markanteste Features extrahiert durch Max-Pool. Dies verkleinert width, size des Bildes und erhöht die Channels/Tiefe (Input = 128x128x3,
+		output = 8x8x256). Die Tiefendimension speichert die Merkmale/Features des Bildes.
+		Der Decoder upsampelt das Bild -> Das heißt die Tiefendimension wird kleiner (weniger gespeicherte Features) und width and heigth erhöhen sich. Das interessante bei einem u-net ist die verbindung der
+		Encoder layerstacks mit dem decoder layerstacks. Der Output eines Encoder layerstacks wird mit dem in der Symmetrie gegenüberliegenten input des layerstacks addiert.
+	
+label = label != 0 nur binäre segmentation in mutlisegmentationen wird das label nach verwendung des softmaxes auf die prediction direkt mit der prediction verglichen
+Softmax nur im Training verwenden
+
+
+Vorteile der Software (Für die Doku):
+	•	Vorteile einer automatischen Segmentation
+	•	Die Segmentierung der Bilddaten durch ein neurales Netz ist eine immense Einsparung von Arbeitsressourcen wie Zeit und Budget
+	•	Nutzung der Software kann auch von Menschen ohne medizinisches Studium durchgeführt werden
+	•	Die Vereinheitlichung in der Art der Segmentationen durch eine Software führt zu einem Standard.
+	•	Ein Standard kann zur Minimierung von falsch Interpretationen der Bildsegmentationen führen.
+
+	
