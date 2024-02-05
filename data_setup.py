@@ -12,57 +12,54 @@ from monai.data import DataLoader, Dataset, CacheDataset
 import monai
 import utils
 
-
-#in_dir: Path = Path(__file__).parent
-#out_dir: Path = in_dir / 'out_dir'
-def create_groups(in_dir: str, 
-                  out_dir: str, 
+def create_groups(in_dir: str or Path, 
+                  out_dir: str or Path, 
                   numb_slices: int):
     '''
     Move files from the input directory into newly created folders
     
     Args:
-            in_dir: Path to input directory
-            out_dir: Path to target directory
-            numb_slices: Number of the size of the data collection
+            in_dir (str or Path): Path to input directory
+            out_dir (str or Path): Path to target directory
+            numb_slices (str or Path): Number of the size of the data collection
     '''
+    
     for patient_path in Path(in_dir).glob('*'):
         patient_name: str = patient_path.name
         number_folders: int = len(list(patient_path.glob('*'))) // numb_slices
-        
         for folder_index in range(number_folders):
             output_path: Path = out_dir / f'{patient_name}_{str(folder_index)}'
             output_path.mkdir(parents = True, exist_ok = True)
             
             for i, file in enumerate(patient_path.glob('*')):
+                print('3. forschleife')
                 if i == numb_slices + 1:
                     break
             
-                shutil.copy(file, output_path)
-                print(f'[INFO] File {file.name} was moved to {output_path}')
+                shutil.remove(file, output_path)
 
-def dcom2nifti(in_dir: str, 
-                out_dir: str):
+def dcom2nifti(in_dir: str or Path, 
+                out_dir: str or Path):
     '''
     Converts dicom files into nifti files and move them to an other directory
     
     Args:
-        in_dir: Path to input directory
-        out_dir: Path to target directory
+        in_dir (str or Path): Path to input directory
+        out_dir (str or Path): Path to target directory
     '''
     for folder in tqdm(Path(in_dir).glob('*')):
         patient_name: str = folder.name
         dicom2nifti.dicom_series_to_nifti(folder, Path(out_dir / f'{patient_name}.nii.gz'))
            
-def find_empty(in_dir: str) -> list:
+def find_empty(in_dir: str or Path) -> list:
     '''
     Searching for not empty nifti files
     
     Args:
-        in_dir: Path to input directory
+        in_dir (str or Path): Path to input directory
     
     Returns:
-        list_patients: A list with not empty nifti files
+        list_patients (list): A list with not empty nifti files
     '''
 
     list_patients: list = []
@@ -77,30 +74,28 @@ def find_empty(in_dir: str) -> list:
             
     return list_patients
 
-def edit_label(in_dir: str,
-               out_dir: str):
+def edit_label(in_dir: str or Path,
+               out_dir: str or Path):
     '''
     Process NIfTI segmentation files in the input directory, apply value mapping for normalization, and save results.    Args:
     
     Args:    
-        in_dir: Path to the input directory containing segmentaion NIfTI files.
-        out_dir: Path to the output directory where processed segmentations will be saved.
+        in_dir (str or Path): Path to the input directory containing segmentaion NIfTI files.
+        out_dir (str or Path): Path to the output directory where processed segmentations will be saved.
     '''
     file: Path = Path(in_dir).glob('*.nii.gz')
-    value_mapping: dict = {}
     for nifti in file:
         print(f'[INFO] Mapping {nifti.name} to {out_dir} directory')
         image: nib = nib.load(nifti)
         tensor: torch = torch.as_tensor(image.get_fdata())
-        for i, voxel in sorted(enumerate(torch.unique(tensor))):
-            value_mapping[voxel] = i
+        value_mapping = {voxel: i for i, voxel in enumerate(torch.unique(tensor))}
         for original_val, mapped_val in value_mapping.items():
             tensor[tensor == original_val] = mapped_val
         nib.save(nib.Nifti1Image(tensor.numpy(), affine = None), Path(out_dir) / nifti.name)
-        value_mapping.clear()
-        Path(nifti).unlink()
+        if (Path(out_dir) / nifti.name).is_file():
+            Path(nifti).unlink()
     
-def prepare(in_dir: str, 
+def prepare(in_dir: str or Path, 
             pixdim: tuple = (1.5, 1.5, 1.0), 
             a_min: float = - 200, 
             a_max: float = 1000, 
@@ -115,30 +110,31 @@ def prepare(in_dir: str,
     Creates datasets, applies transforms, and sets up dataloaders.
     
     Arg: 
-        in_dir: Path to input directory.
-        pixdim: Scales the size of the voxels and their spacing, measured from the center of one voxel to the center of the next.
-        a_min: Minimum intensity value for rescaling.
-        a_max: Maximum intensity value for rescaling.
-        b_min: Minimum intensity value after scaling.
-        b_max: Maximum intensity value after scaling.
-        clip: If True, clips the intensity values to the range [b_min, b_max] after scaling.
-        spatial_size: Target spatial_size of the processed data, e.g. [depth, height, width],
-        cache: If True, enables caching of processed data to improve loading speed.
-        manual_seed: If True, sets a manual seed for reproducibility.
-        num_workers: Number of parrale workers for data loading.
+        in_dir (str or Path): Path to input directory.
+        pixdim (tuple[float, float, float]): Scales the size of the voxels and their spacing, measured from the center of one voxel to the center of the next.
+        a_min (float): Minimum intensity value for rescaling.
+        a_max (float): Maximum intensity value for rescaling.
+        b_min (float): Minimum intensity value after scaling.
+        b_max (float): Maximum intensity value after scaling.
+        clip (bool): If True, clips the intensity values to the range [b_min, b_max] after scaling.
+        spatial_size (list[int, int, int]): Target spatial_size of the processed data, e.g. [depth, height, width],
+        cache (bool): If True, enables caching of processed data to improve loading speed.
+        manual_seed (bool): If True, sets a manual seed for reproducibility.
+        num_workers (int): Number of parrale workers for data loading.
         
     Returns: 
-        A tuple containing dataloaders
+        tuple[train_dataloader (monai.data.DataLoader): Contain the Train dataloader,
+              test_dataloader (monai.data.DataLoader): Contain the test dataloader]
         
     '''
     if manual_seed:
         utils.set_seed()
     
-    path_train_volumes: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_volumes').glob('*.nii.gz'))
-    path_train_segmentations: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'train_segmentations').glob('*.nii.gz'))
+    path_train_volumes: list[Path] = sorted(Path(in_dir / 'train_volumes').glob('*.nii.gz'))
+    path_train_segmentations: list[Path] = sorted(Path(in_dir / 'train_segmentations').glob('*.nii.gz'))
     
-    path_test_volumes: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'test_volumes').glob('*nii.gz'))
-    path_test_segmentations: list[Path] = sorted(Path(in_dir / 'nifti_files' / 'test_segmentations').glob('*.nii.gz'))
+    path_test_volumes: list[Path] = sorted(Path(in_dir / 'test_volumes').glob('*nii.gz'))
+    path_test_segmentations: list[Path] = sorted(Path(in_dir / 'test_segmentations').glob('*.nii.gz'))
     
     train_files: list[dict[Path, Path]] = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_train_volumes, path_train_segmentations)]
     test_files: list[dict[Path, Path]] = [{'vol': image_name, 'seg': image_label} for image_name, image_label in zip(path_test_volumes, path_test_segmentations)]

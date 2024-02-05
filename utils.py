@@ -10,17 +10,19 @@ from mlxtend import plotting
 from monai import inferers, transforms
 import monai
 import matplotlib.pyplot as plt
+import shutil
+import numpy as np
 
 def save_model(model: torch.nn.Module,
-               target_dir: str,
+               target_dir: str or Path,
                model_name: str):
     '''
     Saves a PyTorch model to a target directory.
     
     Args:
-        model: Target PyTorch model to save.
-        target_dir: Directory for saving the model to
-        model_name: Filename for the saved model. Should include either '.pth' or '.pt' as the file extension
+        model (torch.nn.Module): Target PyTorch model to save.
+        target_dir (str or Path): Directory for saving the model to
+        model_name (str): Filename for the saved model. Should include either '.pth' or '.pt' as the file extension
     '''
     
     target_dir_path = Path(target_dir)
@@ -34,13 +36,13 @@ def save_model(model: torch.nn.Module,
                f = model_save_path)
 
 def load_weights(model: torch.nn.Module,
-                 target_dir: Path) -> torch.nn.Module:
+                 target_dir: str or Path) -> torch.nn.Module:
     '''
     Loads pre-trained weights into a PyTorch model from a specified directory
     
     Args:
-        model: PyTorch model to which will be loaded
-        target_dir: Directory containing the pre-trained weights
+        model (torch.nn.Module): PyTorch model to which will be loaded
+        target_dir (str or Path): Directory containing the pre-trained weights
     
     Returns:
         torch.nn.Module: PyTorch model with loaded weights
@@ -55,15 +57,15 @@ def load_weights(model: torch.nn.Module,
     return model
 
 def save_metric(name: str,
-                target_dir: str,
+                target_dir: str or Path,
                 metric_list: list):
     '''
     Save a metric to a NumPy binary file.
     
     Args:
-        name: Name of the metric, used as a part of the saved file's name
-        target_dir: Directory path where the metric file will be saved
-        metric_list: List of metric values to be saved
+        name (str): Name of the metric, used as a part of the saved file's name
+        target_dir (str or Path): Directory path where the metric file will be saved
+        metric_list (list): List of metric values to be saved
     '''
     #print(f'[INFO] Saving metric {name} to {target_dir}.')
     file_name: str = name + '.npy'
@@ -73,39 +75,39 @@ def save_metric(name: str,
             arr = metric_list)
     #print(f'[INFO] Metric saved successfully')
 
-def save_best_metric(target_dir: str,
+def save_best_metric(target_dir: str or Path,
                      best_metric: float):
     '''
     Save the best metric as a text file
     
     Args:
-        target_dir: Directory path where the best metric file will be saved.
-        best_metric: best_metric: Value of the best metric achieved.
+        target_dir (str or Path): Directory path where the best metric file will be saved.
+        best_metric (float): best_metric: Value of the best metric achieved.
     '''
     best_metric_dir: Path = Path(target_dir) / 'best_metric.txt'
     with open(best_metric_dir, 'w') as file:
         file.write(str(best_metric)) 
 
-def save_best_metric_info(target_dir: str,
+def save_best_metric_info(target_dir: str or Path,
                      best_metric: float,
                      best_metric_epoch: int):
     '''
     Save the best metric, the epoch at which the best metric was achieved, and the timestamp in a text file to gain insights into the model's performance over time.    
     Args:
-        target_dir: Directory path where the best_metric_info file will be saved.
-        best_metric: Value of the best metric achieved.
-        best_metric_epoch: Epoch at which the best metric was achieved.
+        target_dir (str or Path): Directory path where the best_metric_info file will be saved.
+        best_metric (float): Value of the best metric achieved.
+        best_metric_epoch (int): Epoch at which the best metric was achieved.
     '''
     target_dir = Path(target_dir)
     with open((target_dir / 'best_metric_info.txt'), 'a') as file:
                 file.write(f'Best metric: {str(best_metric)} | Best metric epoch: {str(best_metric_epoch)} | Datetime: {datetime.now().strftime("%H:%M:%S %Y-%m-%d")}\n')
 
-def load_best_metric(target_dir: str) -> float:
+def load_best_metric(target_dir: str or Path) -> float:
     '''
     Load the best metric value from a text file
     
     Args:
-        target_dir: Directory path where best metric file is located.
+        target_dir (str or Path): Directory path where best metric file is located.
     '''
     best_metric: int = 0
     
@@ -122,8 +124,8 @@ def create_writer(model_name: str,
     Create and return a Tensorboard SummaryWriter for logging.
     
     Args:
-        model_name: Name of the model
-        extra: Additional information to append to the log directory.
+        model_name (str): Name of the model
+        extra str (str): Additional information to append to the log directory.
         
     Returns:
         tensorboard.SummaryWriter: SummaryWriter object
@@ -136,15 +138,15 @@ def create_writer(model_name: str,
     return tensorboard.SummaryWriter(log_dir = log_dir)
 
 def save_nifti(prediction_list: list, 
-               out_dir: str, 
+               out_dir: str or Path, 
                name: str = 'prediction'):
     '''
     Save a 3D prediction tensor as a Nifit file.
     
     Args:
-        prediction: List of 3D tensors to be saved as NIfTI files.
-        out_dir: Directory where the NIfTI files will be saved.
-        name: Prefix for the saved NIfTI files. Defaults to 'prediction'.
+        prediction (list): List of 3D tensors to be saved as NIfTI files.
+        out_dir (str or Path): Directory where the NIfTI files will be saved.
+        name (str): Prefix for the saved NIfTI files. Defaults to 'prediction'.
     '''
     for i, data in enumerate(prediction_list):
         print(f'[INFO] Saving {name}_{i} Nifti file to {out_dir}')
@@ -155,7 +157,7 @@ def set_seed(seed: int = 42):
     Set the random seed for PyTorch operations to ensure reproducibility.
     
     Args:
-        seed: The desired random seed.
+        seed (int): The desired random seed.
     '''
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -169,11 +171,12 @@ def plot_confusion_matrix(model: torch.nn.Module,
     '''
     Plots a confusion matrix for multiclass segmentation using predicted and true labels.
 
-    Parameters:
-    - class_names: A list of class names corresponding to the categories.
-    - model: The PyTorch model used for prediction.
-    - roi_size: Region of interest size. Default is (128, 128, 64).
-    - sw_batch_size: Sliding window batch size. Default is 4.
+    Args:
+    - model (torch.nn.Module): The PyTorch model used for prediction.
+    - test_dataloader (monai.data.DataLoader): Dataloader for the test data set
+    - class_names (list): A list of class names corresponding to the categories.
+    - roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
+    - sw_batch_size (int): Sliding window batch size. Default is 4.
     
     Return:
     - list: Containing the test predictions
@@ -218,12 +221,12 @@ def plot_image_label_prediction(test_patient: torch.Tensor,
     """
     Plots images, labels, binary segmentations, and multi-segmentations for visual inspection.
 
-    Parameters:
-    - test_patient: The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
-    - prediction: The predicted segmentation result.
-    - test_outputs: The output tensor from the model.
-    - start_image_index: Index of the first image for visualization. Default is 50.
-    - threshold: Threshold for binary segmentation. Default is 0.53.
+    Args:
+    - test_patient (torch.Tensor): The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
+    - prediction (torch.Tensor): The predicted segmentation result.
+    - test_outputs (torch.Tensor): The output tensor from the model.
+    - start_image_index (int): Index of the first image for visualization. Default is 50.
+    - threshold (float): Threshold for binary segmentation. Default is 0.53.
     """
         
     sigmoid_activation = transforms.Activations(sigmoid = True)
@@ -247,3 +250,83 @@ def plot_image_label_prediction(test_patient: torch.Tensor,
             plt.title(f'Multi segmentation {i}')
             plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
             plt.show()
+
+def number_of_classes(in_dir: str or Path) -> int:
+    '''
+    """
+    Count the total number of unique classes present in Nifti volumes within the specified directory.
+
+    Args:
+    - in_dir (str or Path): The path to the directory containing Nifti files.
+
+    Returns:
+    - int: The total number of unique classes present in the Nifti volumes.
+    """
+    '''
+    file: Path = Path(in_dir).glob('*.nii.gz')
+    for nifti in file:
+        image = nib.load(nifti)
+        num_classes = torch.as_tensor(image.get_fdata()).unique()
+        print(f'[INFO] Number of classes: {int(len(num_classes))}')
+        return int(len(num_classes))
+    
+def remove_directory_recursive(in_dir: str or Path):
+    '''
+    Removes the target directory and all its contents recursively.
+
+    Args:
+    - in_dir (str or Path): Path to the target directory.
+    '''
+    if in_dir.is_dir():
+        shutil.rmtree(in_dir)
+        print(f'[INFO] The directory {in_dir} has been recursively removed.')
+    else:
+        print(f'[INFO] No directory exists under the path: {in_dir}.')
+
+def plot_metric(train_loss: np.ndarray[float],
+                train_metric: np.ndarray[float],
+                test_loss: np.ndarray[float],
+                test_metric: np.ndarray[float]):
+    """
+    Plots the metric data for training and testing.
+
+    Args:
+        train_loss (np.ndarray[float]): Numpy array containing the training loss values.
+        train_metric (np.ndarray[float]): Numpy array containing the training metric values.
+        test_loss (np.ndarray[float]): Numpy array containing the test loss values.
+        test_metric (np.ndarray[float]): Numpy array containing the test metric values.
+    """ 
+    plt.figure(f'Results of {datetime.now().strftime("%d %B")}')
+    plt.figure(figsize = (7, 3))
+    plt.subplot(1, 2, 1)
+    plt.title('Train Dice loss')
+    x = [i + 1 for i in range(len(train_loss))]
+    y = train_loss
+    plt.xlabel('epoch')
+    plt.plot(x, y)
+
+    plt.subplot(1, 2, 2)
+    plt.title('Train metric DICE')
+    x = [i + 1 for i in range(len(train_metric))]
+    y = train_metric
+    plt.xlabel('epoch')
+    plt.plot(x, y)
+
+    plt.show()
+
+    plt.figure(figsize = (7, 3))
+    plt.subplot(1, 2, 1)
+    plt.title('Test Dice loss')
+    x = [i + 1 for i in range(len(test_loss))]
+    y = test_loss
+    plt.xlabel('epoch')
+    plt.plot(x, y)
+
+    plt.subplot(1, 2, 2)
+    plt.title('Test metric DICE')
+    x = [i for i in range(len(test_metric))]
+    y = test_metric
+    plt.xlabel('epoch')
+    plt.plot(x, y)
+
+    plt.show()

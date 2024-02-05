@@ -35,7 +35,8 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-icecream (debuggen)
 		-mlxtend (plotting confusion matrix)
 	
-	
+------data_preprocess--------  
+	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
 ------Preprocess------  
 Aktuelles verzeichnis zeigen : Path(__file__).parent  
 
@@ -52,7 +53,7 @@ Funktionen:
 				 len(unique) > 2 = zählt die eindeutigen werte und gibt True zurück wenn es mehr als zwei sind.  
 ??				 Habe die Funktion mit .unlink() ergänzt, sollte alle leeren Bilder löschen.  
 	-set_seed: Zufallswerte für berechnung auf cpu/gpu festlegen. 
-	-edit_label: Funktion erkennt die Anzahl der unique Werte (Grauwerte) und maped sie zu einem Index in ein Dictionary.  
+	-edit_label: Funktion erkennt die Anzahl der unique Werte (Grauwerte) und maped sie zu einem Index in ein Dictionary. Löscht die Originaldatei wenn gemapped Datei existiert  
 !!	-prepare: über parameter informieren, sind die Werte gut?  
 !!			  Die Pfade könnten Probleme verursachen.  
 			  Dictionaries werden mit list comprehension und der zip funktion erstellt. Zip Funktion erstellt einen iterator von paarweisen Tuples.  
@@ -120,6 +121,9 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 !!++	save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.  
 		plot_confusion_matrix: Erstellt eine Confusion Matrix welche die Labels und die predictions gegenüberstellt.  
 		plot_image_label_prediction: Plottet mit hilfe von Matplolib einen Ausgewählten Datensatz (Image, label, binary prediction, multi prediction)  
+		number_of_classes: Gibt die Anzahl an Klassen zurück  
+		remove_directory_recursive: Löscht ein Verzeichnis mit all seinen Daten.  
+		plot_metric: erstellt ein matplotlib diagramm für die Metriken: train/test loss und train/test metrik  
 		
 ---------predictions-----------  
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
@@ -138,37 +142,8 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	3. Höhe  
 	4. Breite  
 	5. Index  
+
 	
 ---------Tensorboard Tutorial--------  
 	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs  
 	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007  
-
-------------------------------------------------------------  
-Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
-  
-
-------------------------------------------------------------  
-Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.   
-
-
-
--------------------------------------------------------------
-Good to know:
-	Die features im Netz spiegeln die Channels/Tiefendimension wieder (1, 3, 128, 128) -> 3 sind die Inputfeatures
-	U-Net: Encoder/Decoder. Im Encoder werden markanteste Features extrahiert durch Max-Pool. Dies verkleinert width, size des Bildes und erhöht die Channels/Tiefe (Input = 128x128x3,
-		output = 8x8x256). Die Tiefendimension speichert die Merkmale/Features des Bildes.
-		Der Decoder upsampelt das Bild -> Das heißt die Tiefendimension wird kleiner (weniger gespeicherte Features) und width and heigth erhöhen sich. Das interessante bei einem u-net ist die verbindung der
-		Encoder layerstacks mit dem decoder layerstacks. Der Output eines Encoder layerstacks wird mit dem in der Symmetrie gegenüberliegenten input des layerstacks addiert.
-	
-label = label != 0 nur binäre segmentation in mutlisegmentationen wird das label nach verwendung des softmaxes auf die prediction direkt mit der prediction verglichen
-Softmax nur im Training verwenden
-
-
-Vorteile der Software (Für die Doku):
-	•	Vorteile einer automatischen Segmentation
-	•	Die Segmentierung der Bilddaten durch ein neurales Netz ist eine immense Einsparung von Arbeitsressourcen wie Zeit und Budget
-	•	Nutzung der Software kann auch von Menschen ohne medizinisches Studium durchgeführt werden
-	•	Die Vereinheitlichung in der Art der Segmentationen durch eine Software führt zu einem Standard.
-	•	Ein Standard kann zur Minimierung von falsch Interpretationen der Bildsegmentationen führen.
-
-	

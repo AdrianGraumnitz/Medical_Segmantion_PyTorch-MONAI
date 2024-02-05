@@ -19,8 +19,8 @@ def dice_metric(prediction: torch.Tensor,
     Calculates the Dice accuracy for segmentation tasks.
     
     Args:
-        prediction: The model's segmentation prediction
-        label: The ground truth segmentation label
+        prediction (torch.Tensor): The model's segmentation prediction
+        label (torch.Tensor): The ground truth segmentation label
     
     Returns:
         value: Dice accuracy
@@ -35,7 +35,7 @@ def calculate_weights(class_counts: int) -> torch.Tensor:
     Calculate class weights for imbalanced class distribution in training data.
     
     Args:
-        class_counts: Counts of pixels for each class
+        class_counts (int): Counts of pixels for each class
     Returns:
         torch.Tensor: A tensor containing the calculated weights. These weights can be used as an argument in the weight parameter of the cross-entropy loss function.
 
@@ -58,15 +58,15 @@ def train_step(model: torch.nn.Module,
      Perform a training step using the provided model, dataloader, loss function, optimizer, and device.
      
      Args:
-        model: The neural network model
-        dataloader: The train dataloader
-        loss_fn: The loss function
-        optimizer: The optimizer for updating the parameters
-        device: cpu or cuda
+        model (torch.nn.Module): The neural network model
+        dataloader (monai.data.DataLoader): The train dataloader
+        loss_fn (monai.losses): The loss function
+        optimizer (torch.optim.Optimizer): The optimizer for updating the parameters
+        device (torch.device): cpu or cuda
         
     Returns:
-        train_loss: contains the mean loss of the train step
-        train_metric: contain the mean dice accuracy of the train_step
+        tuple[train_loss (float): contains the mean loss of the train step,
+              train_metric (float): contain the mean dice accuracy of the train_step
     '''
     train_loss: float= 0
     train_metric: float = 0
@@ -103,14 +103,14 @@ def test_step(model: torch.nn.Module,
      Perform a test step using the provided model, dataloader, loss function, optimizer, and device.
      
      Args:
-        model: The neural network model
-        dataloader: The test dataloader
-        loss_fn: The loss function
-        device: cpu or cuda
+        model (torch.nn.Module): The neural network model
+        dataloader (monai.data.DataLoader): The test dataloader
+        loss_fn (monai.losses): The loss function
+        device torch.device: cpu or cuda
      
      Returns:
-        test_loss: contains the mean loss of the test_step
-        test_metric: contain the mean dice accuracy of the test step
+        tuple[test_loss (float): contains the mean loss of the test_step,
+              test_metric (float): contain the mean dice accuracy of the test step]
     '''
     test_loss: float = 0
     test_metric: float = 0
@@ -142,25 +142,25 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           epochs: int,
           device: torch.device,
-          target_dir: str,
+          target_dir: str or Path,
           model_name: str,
           writer: torch.utils.tensorboard.writer.SummaryWriter,
-          manual_seed: bool = True) -> dict[str, list]:
+          manual_seed: bool = False) -> dict[str, list]:
     '''
     Trains a PyTorch/Monai model using the provided data and configuration
     
     Args:
-        model: The neural network model to be trained.
-        train_dataloader: DataLoader for the training dataset.
-        test_dataloader: DataLoader for the testing dataset.
-        loss_fn: Loss function for optimization.
-        optimizer: Optimizer for updating model parameters.
-        epochs: Number of training epochs.
-        device: Device (cpu or cuda) on which to perform training.
-        target_dir: Directory for saving the trained model.
-        model_name: Filename for the saved model (should include '.pth' or '.pt' extension).
-        writer: Creates a summary writer instance for tensorboard visualisation
-        manual_seed: If True, sets a manual seed for better reproducibility.
+        model (torch.nn.Module): The neural network model to be trained.
+        train_dataloader (monai.data.DataLoader): DataLoader for the training dataset.
+        test_dataloader (monai.data.DataLoader): DataLoader for the testing dataset.
+        loss_fn (monai.losses): Loss function for optimization.
+        optimizer (torch.optim.Optimizer): Optimizer for updating model parameters.
+        epochs (int): Number of training epochs.
+        device (torch.device): Device (cpu or cuda) on which to perform training.
+        target_dir (str or Path): Directory for saving the trained model.
+        model_name (str): Filename for the saved model (should include '.pth' or '.pt' extension).
+        writer (torch.utils.tensorboard.writer.SummaryWriter): Creates a summary writer instance for tensorboard visualisation
+        manual_seed (bool): If True, sets a manual seed for better reproducibility.
         
     Returns:
         dict[str, list]: Dictionary containing lists of training and testing loss/metric values.
@@ -269,15 +269,15 @@ def perform_inference(model: torch.nn.Module,
     Performs inference using the sliding window technique on the given input volume.
 
     Parameters:
-    - model: The PyTorch model used for prediction.
-    - test_patient: The input volume on which to perform inference.
-    - roi_size: Region of interest size. Default is (128, 128, 64).
-    - sw_batch_size: Sliding window batch size. Default is 4.
-    - device: The device on which to perform inference.
+    - model (torch.nn.Module): The PyTorch model used for prediction.
+    - test_patient (torch.Tensor): The input volume on which to perform inference.
+    - roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
+    - sw_batch_size (int): Sliding window batch size. Default is 4.
+    - device (torch.device): The device on which to perform inference.
 
     Returns:
-    - torch.Tensor: The output of the model
-    - torch.Tensor: The predicted segmentation result.
+    - tuple[torch.Tensor: The output of the model,
+            torch.Tensor: The predicted segmentation result.
     '''
     with torch.inference_mode():
         
