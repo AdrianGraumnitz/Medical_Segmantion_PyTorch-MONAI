@@ -34,6 +34,7 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-tensorboard
 		-icecream (debuggen)
 		-mlxtend (plotting confusion matrix)
+		-open3d (erstellt ein Mesh der predictions)
 	
 ------data_preprocess--------  
 	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
@@ -124,6 +125,7 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 		number_of_classes: Gibt die Anzahl an Klassen zurück  
 		remove_directory_recursive: Löscht ein Verzeichnis mit all seinen Daten.  
 		plot_metric: erstellt ein matplotlib diagramm für die Metriken: train/test loss und train/test metrik  
+		rescale_predictions: Rescaled die predictions auf die höhen, breiten und tiefen dimension der Originalbilder.  
 		
 ---------predictions-----------  
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
