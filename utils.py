@@ -1,14 +1,14 @@
 import torch
+import torchmetrics
+from torch.utils import tensorboard
+from torch.nn import functional
+import monai
+from monai import inferers, transforms
 from pathlib import Path
 import numpy as np
 from datetime import datetime
-from torch.utils import tensorboard
-from datetime import datetime
 import nibabel as nib
-import torchmetrics
 from mlxtend import plotting
-from monai import inferers, transforms
-import monai
 import matplotlib.pyplot as plt
 import shutil
 import numpy as np
@@ -253,7 +253,6 @@ def plot_image_label_prediction(test_patient: torch.Tensor,
 
 def number_of_classes(in_dir: str or Path) -> int:
     '''
-    """
     Count the total number of unique classes present in Nifti volumes within the specified directory.
 
     Args:
@@ -261,7 +260,6 @@ def number_of_classes(in_dir: str or Path) -> int:
 
     Returns:
     - int: The total number of unique classes present in the Nifti volumes.
-    """
     '''
     file: Path = Path(in_dir).glob('*.nii.gz')
     for nifti in file:
@@ -330,3 +328,36 @@ def plot_metric(train_loss: np.ndarray[float],
     plt.plot(x, y)
 
     plt.show()
+    
+    
+    
+def rescale_predictions(prediction_list: list[torch.Tensor],
+                        file_path: Path.glob):
+    '''
+    Rescales a list of predictions to match the dimensions of corresponding Nifti files.
+
+    Args:
+        prediction_list (list[torch.Tensor]): List of predictions to be rescaled.
+        file_path (Path.glob): Generator of file paths to Nifti files.
+
+    Returns:
+        list[torch.Tensor]: List of rescaled predictions with dimensions matching the corresponding Nifti files.
+    '''
+    
+    rescaled_prediction_list = []
+    images = [image for image in file_path]
+    
+    if len(prediction_list) != len(images):
+        print(f'[INFO] The length of the prediction list: {len(prediction_list)} dont match with the length of the number of files in the directory: {len(images)}')
+    else:
+        print(f'[INFO] Length of prediction list: {len(prediction_list)}')
+        print(f'[INFO] Number of Nifti files in directory: {len(images)}')
+        
+        for image, prediction in zip(images, prediction_list):
+            image = torch.as_tensor(nib.load(image).get_fdata()).unsqueeze(dim = 0).unsqueeze(dim = 0)
+            prediction = prediction.unsqueeze(dim = 0)
+            rescaled_prediction = functional.interpolate(input = prediction.to(torch.float),
+                                                size = image.shape[-3:],
+                                                mode = 'nearest')
+            rescaled_prediction_list.append(torch.flip(rescaled_prediction, dims = (2,)))
+        return rescaled_prediction_list
