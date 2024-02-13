@@ -1,20 +1,15 @@
 import torch
-import torchmetrics
 from torch.utils import tensorboard
-from torch.nn import functional
-import monai
-from monai import inferers, transforms
 from pathlib import Path
 import numpy as np
 from datetime import datetime
 import nibabel as nib
-from mlxtend import plotting
-import matplotlib.pyplot as plt
 import shutil
 import numpy as np
+from pathlib import Path
 
 def save_model(model: torch.nn.Module,
-               target_dir: str or Path,
+               target_dir: Path,
                model_name: str):
     '''
     Saves a PyTorch model to a target directory.
@@ -36,28 +31,33 @@ def save_model(model: torch.nn.Module,
                f = model_save_path)
 
 def load_weights(model: torch.nn.Module,
-                 target_dir: str or Path) -> torch.nn.Module:
+                 target_dir: Path,
+                 device: torch.device = 'cuda' if torch.cuda.is_available() else 'cpu') -> torch.nn.Module:
     '''
     Loads pre-trained weights into a PyTorch model from a specified directory
     
     Args:
         model (torch.nn.Module): PyTorch model to which will be loaded
         target_dir (str or Path): Directory containing the pre-trained weights
+        device (torch.device): Sets the model on cpu or gpu
     
     Returns:
         torch.nn.Module: PyTorch model with loaded weights
     '''
-    model.load_state_dict(torch.load(target_dir))
-    
-    if model is not None:
-        print('[INFO] Weights sucessfuly loaded.')
+    if target_dir.is_file():
+        model.load_state_dict(torch.load(target_dir))
+        if model is not None:
+            print('[INFO] Weights sucessfuly loaded.')
+        else:
+            print('[INFO] Failed to load weights')
     else:
-        print('[INFO] Failed to load weights')
+        print(f'[INFO] Find no model in this directory')
+    
         
-    return model
+    return model.to(device)
 
 def save_metric(name: str,
-                target_dir: str or Path,
+                target_dir: Path,
                 metric_list: list):
     '''
     Save a metric to a NumPy binary file.
@@ -68,14 +68,14 @@ def save_metric(name: str,
         metric_list (list): List of metric values to be saved
     '''
     #print(f'[INFO] Saving metric {name} to {target_dir}.')
-    file_name: str = name + '.npy'
+    file_name = name + '.npy'
     target_dir = Path(target_dir) / file_name
     
     np.save(file = target_dir,
             arr = metric_list)
     #print(f'[INFO] Metric saved successfully')
 
-def save_best_metric(target_dir: str or Path,
+def save_best_metric(target_dir: Path,
                      best_metric: float):
     '''
     Save the best metric as a text file
@@ -84,11 +84,11 @@ def save_best_metric(target_dir: str or Path,
         target_dir (str or Path): Directory path where the best metric file will be saved.
         best_metric (float): best_metric: Value of the best metric achieved.
     '''
-    best_metric_dir: Path = Path(target_dir) / 'best_metric.txt'
+    best_metric_dir = Path(target_dir) / 'best_metric.txt'
     with open(best_metric_dir, 'w') as file:
         file.write(str(best_metric)) 
 
-def save_best_metric_info(target_dir: str or Path,
+def save_best_metric_info(target_dir: Path,
                      best_metric: float,
                      best_metric_epoch: int):
     '''
@@ -102,14 +102,14 @@ def save_best_metric_info(target_dir: str or Path,
     with open((target_dir / 'best_metric_info.txt'), 'a') as file:
                 file.write(f'Best metric: {str(best_metric)} | Best metric epoch: {str(best_metric_epoch)} | Datetime: {datetime.now().strftime("%H:%M:%S %Y-%m-%d")}\n')
 
-def load_best_metric(target_dir: str or Path) -> float:
+def load_best_metric(target_dir: Path) -> float:
     '''
     Load the best metric value from a text file
     
     Args:
         target_dir (str or Path): Directory path where best metric file is located.
     '''
-    best_metric: int = 0
+    best_metric = 0
     
     with open(target_dir, 'r') as file:
         for metric in file:
@@ -131,14 +131,14 @@ def create_writer(model_name: str,
         tensorboard.SummaryWriter: SummaryWriter object
     '''
     
-    timestamp: datetime = datetime.now().strftime("%Y-%m-%d")
+    timestamp = datetime.now().strftime("%Y-%m-%d")
     log_dir = Path.cwd().parent / 'runs' / timestamp / model_name / extra
     print(f'[INFO Created SummaryWriter saving to {log_dir}]')
     
     return tensorboard.SummaryWriter(log_dir = log_dir)
 
 def save_nifti(prediction_list: list, 
-               out_dir: str or Path, 
+               out_dir: Path, 
                name: str = 'prediction'):
     '''
     Save a 3D prediction tensor as a Nifit file.
@@ -163,95 +163,8 @@ def set_seed(seed: int = 42):
     torch.cuda.manual_seed(seed)
     print(f'[INFO] Set random seed to {seed}')
 
-def plot_confusion_matrix(model: torch.nn.Module,
-                          test_dataloader: monai.data.DataLoader,
-                          class_names: list,
-                          roi_size: tuple = (128, 128, 64),
-                          sw_batch_size: int = 4) -> list:
-    '''
-    Plots a confusion matrix for multiclass segmentation using predicted and true labels.
 
-    Args:
-    - model (torch.nn.Module): The PyTorch model used for prediction.
-    - test_dataloader (monai.data.DataLoader): Dataloader for the test data set
-    - class_names (list): A list of class names corresponding to the categories.
-    - roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
-    - sw_batch_size (int): Sliding window batch size. Default is 4.
-    
-    Return:
-    - list: Containing the test predictions
-    '''
-    
-    prediction_list = []
-    label_list = []
-    model.eval()
-    with torch.inference_mode():
-        for data in test_dataloader:
-            t_volume = data['vol']
-            test_outputs = inferers.sliding_window_inference(inputs = t_volume,
-                                                        roi_size = roi_size,
-                                                        sw_batch_size = sw_batch_size,
-                                                        predictor = model
-                                                        )
-            prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1)
-            prediction_list.append(prediction)
-            label_list.append(data['seg'].squeeze(dim = 0))
-        
-    prediction_cat_tensor = torch.cat(prediction_list)
-    label_cat_tensor = torch.cat(label_list)
-    
-    confmat = torchmetrics.ConfusionMatrix(task = 'multiclass',
-                                        num_classes = len(class_names))
-    confmat_tensor = confmat(preds = prediction_cat_tensor,
-                            target = label_cat_tensor)
-
-    plotting.plot_confusion_matrix(conf_mat = confmat_tensor.numpy(),
-                                    figsize = (10, 7),
-                                    show_absolute = True,
-                                    show_normed = True,
-                                    colorbar = True,
-                                    class_names = class_names)
-    return prediction_list 
-
-def plot_image_label_prediction(test_patient: torch.Tensor,
-                                prediction: torch.Tensor,
-                                test_outputs: torch.Tensor,
-                                start_image_index: int = 50,
-                                threshold: float = 0.53):
-    """
-    Plots images, labels, binary segmentations, and multi-segmentations for visual inspection.
-
-    Args:
-    - test_patient (torch.Tensor): The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
-    - prediction (torch.Tensor): The predicted segmentation result.
-    - test_outputs (torch.Tensor): The output tensor from the model.
-    - start_image_index (int): Index of the first image for visualization. Default is 50.
-    - threshold (float): Threshold for binary segmentation. Default is 0.53.
-    """
-        
-    sigmoid_activation = transforms.Activations(sigmoid = True)
-    
-    test_outputs = sigmoid_activation(test_outputs)
-    test_outputs = 1 - test_outputs
-    test_outputs = test_outputs > threshold
-
-    for i in range(5):
-            plt.figure('check', (18, 6))
-            plt.subplot(1, 4, 1)
-            plt.title(f'Image {i}')
-            plt.imshow(test_patient['vol'][0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.subplot(1, 4, 2)
-            plt.title(f'Label {i}')
-            plt.imshow(test_patient['seg'][0, 0, :, :, i + start_image_index], cmap ='gray')
-            plt.subplot(1, 4, 3)
-            plt.title(f'Binary segmentation {i}')
-            plt.imshow(test_outputs.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.subplot(1, 4, 4)
-            plt.title(f'Multi segmentation {i}')
-            plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.show()
-
-def number_of_classes(in_dir: str or Path) -> int:
+def number_of_classes(in_dir: Path) -> int:
     '''
     Count the total number of unique classes present in Nifti volumes within the specified directory.
 
@@ -261,14 +174,14 @@ def number_of_classes(in_dir: str or Path) -> int:
     Returns:
     - int: The total number of unique classes present in the Nifti volumes.
     '''
-    file: Path = Path(in_dir).glob('*.nii.gz')
+    file = Path(in_dir).glob('*.nii.gz')
     for nifti in file:
         image = nib.load(nifti)
         num_classes = torch.as_tensor(image.get_fdata()).unique()
         print(f'[INFO] Number of classes: {int(len(num_classes))}')
         return int(len(num_classes))
     
-def remove_directory_recursive(in_dir: str or Path):
+def remove_directory_recursive(in_dir: Path):
     '''
     Removes the target directory and all its contents recursively.
 
@@ -280,84 +193,3 @@ def remove_directory_recursive(in_dir: str or Path):
         print(f'[INFO] The directory {in_dir} has been recursively removed.')
     else:
         print(f'[INFO] No directory exists under the path: {in_dir}.')
-
-def plot_metric(train_loss: np.ndarray[float],
-                train_metric: np.ndarray[float],
-                test_loss: np.ndarray[float],
-                test_metric: np.ndarray[float]):
-    """
-    Plots the metric data for training and testing.
-
-    Args:
-        train_loss (np.ndarray[float]): Numpy array containing the training loss values.
-        train_metric (np.ndarray[float]): Numpy array containing the training metric values.
-        test_loss (np.ndarray[float]): Numpy array containing the test loss values.
-        test_metric (np.ndarray[float]): Numpy array containing the test metric values.
-    """ 
-    plt.figure(f'Results of {datetime.now().strftime("%d %B")}')
-    plt.figure(figsize = (7, 3))
-    plt.subplot(1, 2, 1)
-    plt.title('Train Dice loss')
-    x = [i + 1 for i in range(len(train_loss))]
-    y = train_loss
-    plt.xlabel('epoch')
-    plt.plot(x, y)
-
-    plt.subplot(1, 2, 2)
-    plt.title('Train metric DICE')
-    x = [i + 1 for i in range(len(train_metric))]
-    y = train_metric
-    plt.xlabel('epoch')
-    plt.plot(x, y)
-
-    plt.show()
-
-    plt.figure(figsize = (7, 3))
-    plt.subplot(1, 2, 1)
-    plt.title('Test Dice loss')
-    x = [i + 1 for i in range(len(test_loss))]
-    y = test_loss
-    plt.xlabel('epoch')
-    plt.plot(x, y)
-
-    plt.subplot(1, 2, 2)
-    plt.title('Test metric DICE')
-    x = [i for i in range(len(test_metric))]
-    y = test_metric
-    plt.xlabel('epoch')
-    plt.plot(x, y)
-
-    plt.show()
-    
-    
-    
-def rescale_predictions(prediction_list: list[torch.Tensor],
-                        file_path: Path.glob):
-    '''
-    Rescales a list of predictions to match the dimensions of corresponding Nifti files.
-
-    Args:
-        prediction_list (list[torch.Tensor]): List of predictions to be rescaled.
-        file_path (Path.glob): Generator of file paths to Nifti files.
-
-    Returns:
-        list[torch.Tensor]: List of rescaled predictions with dimensions matching the corresponding Nifti files.
-    '''
-    
-    rescaled_prediction_list = []
-    images = [image for image in file_path]
-    
-    if len(prediction_list) != len(images):
-        print(f'[INFO] The length of the prediction list: {len(prediction_list)} dont match with the length of the number of files in the directory: {len(images)}')
-    else:
-        print(f'[INFO] Length of prediction list: {len(prediction_list)}')
-        print(f'[INFO] Number of Nifti files in directory: {len(images)}')
-        
-        for image, prediction in zip(images, prediction_list):
-            image = torch.as_tensor(nib.load(image).get_fdata()).unsqueeze(dim = 0).unsqueeze(dim = 0)
-            prediction = prediction.unsqueeze(dim = 0)
-            rescaled_prediction = functional.interpolate(input = prediction.to(torch.float),
-                                                size = image.shape[-3:],
-                                                mode = 'nearest')
-            rescaled_prediction_list.append(torch.flip(rescaled_prediction, dims = (2,)))
-        return rescaled_prediction_list

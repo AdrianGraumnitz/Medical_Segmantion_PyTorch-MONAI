@@ -142,7 +142,7 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           epochs: int,
           device: torch.device,
-          target_dir: str or Path,
+          target_dir: Path,
           model_name: str,
           writer: torch.utils.tensorboard.writer.SummaryWriter,
           manual_seed: bool = False) -> dict[str, list]:

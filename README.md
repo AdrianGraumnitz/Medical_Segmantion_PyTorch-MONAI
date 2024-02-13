@@ -35,6 +35,8 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-icecream (debuggen)
 		-mlxtend (plotting confusion matrix)
 		-open3d (erstellt ein Mesh der predictions)
+		-scikit image/skimage (zum plotten von meshes)
+		-numpy-stl (Um mesh Daten als .stl Datei Abzuspeichern.
 	
 ------data_preprocess--------  
 	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
@@ -119,12 +121,9 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 		save_best_metric_info: Beste Metric wird mit bester Epoche und Zeitstempel in einer Textdatei gespeichert.  
 		Load_best_metric: Beste Medric wird geladen. Wenn durch eine File iteriert wird wird nicht durch jedes Symbol einzel sondern durch jede Zeile durchiteriert.  
 		create_writer: Schreibt die Loss und Dicemetriken in Verzeichnis, lässt sich mit Tensorboard visualisieren.  
-!!++	save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.  
-		plot_confusion_matrix: Erstellt eine Confusion Matrix welche die Labels und die predictions gegenüberstellt.  
-		plot_image_label_prediction: Plottet mit hilfe von Matplolib einen Ausgewählten Datensatz (Image, label, binary prediction, multi prediction)  
+!!++	save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.   
 		number_of_classes: Gibt die Anzahl an Klassen zurück  
 		remove_directory_recursive: Löscht ein Verzeichnis mit all seinen Daten.  
-		plot_metric: erstellt ein matplotlib diagramm für die Metriken: train/test loss und train/test metrik  
 		rescale_predictions: Rescaled die predictions auf die höhen, breiten und tiefen dimension der Originalbilder.  
 		
 ---------predictions-----------  
@@ -145,7 +144,25 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	4. Breite  
 	5. Index  
 
+----------plot------------  
+	Beeinhaltet alle Funktionen zum plotten von Daten
+	Funktionen:
+		generate_mesh: Generiert ein Mesh auf basis der reskalierten predictions.  
+		plot_mesh: Vertices sind Koordinatenpunkte im Raum welche die Ecken der Dreiecke definieren. Ein Vertices besteht aus einer Anzahl Vortex (Einzahl von Vertices),  
+				   jeder Vortex enthält die Koordinaten (x, y ,z) zu einem Punkt im Raum.  
+				   Faces definiert die Verbindung zwischen Vertices um eine Fläche oder ein Ploygon zu bilden.  
+		plot_confusion_matrix: Erstellt eine Confusion Matrix welche die Labels und die predictions gegenüberstellt.    
+		plot_image_label_prediction: Plottet mit hilfe von Matplolib einen Ausgewählten Datensatz (Image, label, binary prediction, multi prediction)  
+		plot_metric: erstellt ein matplotlib diagramm für die Metriken: train/test loss und train/test metrik  
+
 	
 ---------Tensorboard Tutorial--------  
 	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs  
 	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007  
+
+------------------------------------------------------------  
+Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
+  
+
+------------------------------------------------------------  
+Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen. 

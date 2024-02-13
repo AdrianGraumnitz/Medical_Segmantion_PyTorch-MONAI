@@ -7,13 +7,14 @@ import dicom2nifti
 import nibabel as nib
 import numpy as np
 import torch
+from torch.nn import functional
 from monai import transforms
 from monai.data import DataLoader, Dataset, CacheDataset
 import monai
 import utils
 
-def create_groups(in_dir: str or Path, 
-                  out_dir: str or Path, 
+def create_groups(in_dir: Path, 
+                  out_dir: Path, 
                   numb_slices: int):
     '''
     Move files from the input directory into newly created folders
@@ -38,8 +39,8 @@ def create_groups(in_dir: str or Path,
             
                 shutil.remove(file, output_path)
 
-def dcom2nifti(in_dir: str or Path, 
-                out_dir: str or Path):
+def dcom2nifti(in_dir: Path, 
+                out_dir: Path):
     '''
     Converts dicom files into nifti files and move them to an other directory
     
@@ -51,7 +52,7 @@ def dcom2nifti(in_dir: str or Path,
         patient_name: str = folder.name
         dicom2nifti.dicom_series_to_nifti(folder, Path(out_dir / f'{patient_name}.nii.gz'))
            
-def find_empty(in_dir: str or Path) -> list:
+def find_empty(in_dir: Path) -> list:
     '''
     Searching for not empty nifti files
     
@@ -74,8 +75,8 @@ def find_empty(in_dir: str or Path) -> list:
             
     return list_patients
 
-def edit_label(in_dir: str or Path,
-               out_dir: str or Path):
+def edit_label(in_dir: Path,
+               out_dir: Path):
     '''
     Process NIfTI segmentation files in the input directory, apply value mapping for normalization, and save results.    Args:
     
@@ -95,7 +96,7 @@ def edit_label(in_dir: str or Path,
         if (Path(out_dir) / nifti.name).is_file():
             Path(nifti).unlink()
     
-def prepare(in_dir: str or Path, 
+def prepare(in_dir: Path, 
             pixdim: tuple = (1.5, 1.5, 1.0), 
             a_min: float = - 200, 
             a_max: float = 1000, 
@@ -197,3 +198,43 @@ def prepare(in_dir: str or Path,
     
     return train_dataloader, test_dataloader
     
+def rescale_predictions(prediction_list: list[torch.Tensor],
+                        file_path: Path.glob):
+    '''
+    Rescales a list of predictions to match the dimensions of corresponding Nifti files.
+
+    Args:
+        prediction_list (list[torch.Tensor]): List of predictions to be rescaled.
+        file_path (Path.glob): Generator of file paths to Nifti files.
+
+    Returns:
+        list[torch.Tensor]: List of rescaled predictions with dimensions matching the corresponding Nifti files.
+    '''
+    
+    rescaled_prediction_list = []
+    images = [image for image in file_path]
+    
+    if len(prediction_list) != len(images):
+        print(f'[INFO] The length of the prediction list: {len(prediction_list)} dont match with the length of the number of files in the directory: {len(images)}')
+        if len(prediction_list) == 1:
+            print("[INFO] Only one dataset is being reshaped, not the entire set.")
+            for image in images:
+                image = torch.as_tensor(nib.load(image).get_fdata()).unsqueeze(dim = 0).unsqueeze(dim = 0)
+                
+                
+                rescaled_prediction = functional.interpolate(input = prediction_list.to(torch.float),
+                                                             size = image.shape[-3:],
+                                                             mode = 'nearest')
+                return rescaled_prediction
+    else:
+        print(f'[INFO] Length of prediction list: {len(prediction_list)}')
+        print(f'[INFO] Number of label files in directory: {len(images)}')
+        
+        for image, prediction in zip(images, prediction_list):
+            image = torch.as_tensor(nib.load(image).get_fdata()).unsqueeze(dim = 0).unsqueeze(dim = 0)
+            prediction = prediction.unsqueeze(dim = 0)
+            rescaled_prediction = functional.interpolate(input = prediction.to(torch.float),
+                                                size = image.shape[-3:],
+                                                mode = 'nearest')
+            rescaled_prediction_list.append(torch.flip(rescaled_prediction, dims = (2,)))
+        return rescaled_prediction_list
