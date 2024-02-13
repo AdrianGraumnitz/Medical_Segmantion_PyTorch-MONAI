@@ -145,7 +145,7 @@ $$		calculate weights (nur f√ºr cross entropy loss): Berechnet die Gewichtung f√
 	5. Index  
 
 ----------plot------------  
-	Beeinhaltet alle Funktionen zum plotten von Daten
+	Beeinhaltet alle Funktionen zum plotten von Daten  
 	Funktionen:
 		generate_mesh: Generiert ein Mesh auf basis der reskalierten predictions.  
 		plot_mesh: Vertices sind Koordinatenpunkte im Raum welche die Ecken der Dreiecke definieren. Ein Vertices besteht aus einer Anzahl Vortex (Einzahl von Vertices),  
