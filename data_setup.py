@@ -96,7 +96,7 @@ def edit_label(in_dir: Path,
         if (Path(out_dir) / nifti.name).is_file():
             Path(nifti).unlink()
     
-def prepare(in_dir: Path, 
+def prepare_train_eval_data(in_dir: Path, 
             pixdim: tuple = (1.5, 1.5, 1.0), 
             a_min: float = - 200, 
             a_max: float = 1000, 
@@ -106,7 +106,7 @@ def prepare(in_dir: Path,
             spatial_size: list = [128, 128, 64], 
             cache = False, 
             manual_seed: bool = False, 
-            num_workers: int = os.cpu_count() // 2) -> tuple[monai.data.DataLoader, monai.data.DataLoader]:
+            num_workers: int = os.cpu_count() // 4) -> tuple[monai.data.DataLoader, monai.data.DataLoader]:
     '''
     Creates datasets, applies transforms, and sets up dataloaders.
     
@@ -198,6 +198,70 @@ def prepare(in_dir: Path,
     
     return train_dataloader, test_dataloader
     
+def prepare_test_data(in_dir: Path, 
+            pixdim: tuple = (1.5, 1.5, 1.0), 
+            a_min: float = - 200, 
+            a_max: float = 1000, 
+            b_min: float = 0.0, 
+            b_max: float = 1.0, 
+            clip: bool = True , 
+            spatial_size: list = [128, 128, 64], 
+            cache = False, 
+            manual_seed: bool = False, 
+            num_workers: int = os.cpu_count() // 4) -> tuple[monai.data.DataLoader, monai.data.DataLoader]:
+    '''
+    Creates datasets, applies transforms, and sets up dataloaders.
+    
+    Arg: 
+        in_dir (str or Path): Path to input directory.
+        pixdim (tuple[float, float, float]): Scales the size of the voxels and their spacing, measured from the center of one voxel to the center of the next.
+        a_min (float): Minimum intensity value for rescaling.
+        a_max (float): Maximum intensity value for rescaling.
+        b_min (float): Minimum intensity value after scaling.
+        b_max (float): Maximum intensity value after scaling.
+        clip (bool): If True, clips the intensity values to the range [b_min, b_max] after scaling.
+        spatial_size (list[int, int, int]): Target spatial_size of the processed data, e.g. [depth, height, width],
+        cache (bool): If True, enables caching of processed data to improve loading speed.
+        manual_seed (bool): If True, sets a manual seed for reproducibility.
+        num_workers (int): Number of parrale workers for data loading.
+        
+    Returns: 
+              test_dataloader (monai.data.DataLoader): Contain the test dataloader]
+        
+    '''    
+
+
+    path_test_volumes: list[Path] = sorted(Path(in_dir / 'test_volumes').glob('*nii.gz'))
+    print(path_test_volumes)
+    test_files: list[dict[Path, Path]] = [{'vol': image_name} for image_name in path_test_volumes]
+
+    test_transform: transforms = transforms.Compose([
+            transforms.LoadImaged(keys = ['vol']),
+            transforms.EnsureChannelFirstd(keys = ['vol']),
+            transforms.CropForegroundd(keys = ['vol'], source_key = 'vol'),
+            transforms.ScaleIntensityRanged(keys = ['vol'], a_min = a_min, a_max = a_max, b_min = b_min, b_max = b_max, clip = clip),
+            transforms.Spacingd(keys = ['vol'], pixdim = pixdim, mode = ('bilinear')),
+            transforms.Orientationd(keys = ['vol'], axcodes = 'RAS'),
+            transforms.Resized(keys = ['vol'], spatial_size = spatial_size, mode = ('bilinear')),
+            transforms.ToTensor()
+        ])
+    if cache:
+        test_dataset: CacheDataset = CacheDataset(data = test_files,
+                                        transform = test_transform,
+                                        cache_rate = 0.1)
+        test_dataloader: DataLoader =   DataLoader(dataset = test_dataset,
+                                            batch_size = 1,
+                                            shuffle = False,
+                                            num_workers = num_workers)
+    else:
+        test_dataset: Dataset = Dataset(data = test_files,
+                                transform = test_transform)
+        test_dataloader: DataLoader =   DataLoader(dataset = test_dataset,
+                                        batch_size = 1,
+                                        shuffle = False,
+                                        num_workers = num_workers)
+    return test_dataloader
+
 def rescale_predictions(prediction_list: list[torch.Tensor],
                         file_path: Path.glob):
     '''
@@ -228,7 +292,7 @@ def rescale_predictions(prediction_list: list[torch.Tensor],
                 return rescaled_prediction
     else:
         print(f'[INFO] Length of prediction list: {len(prediction_list)}')
-        print(f'[INFO] Number of label files in directory: {len(images)}')
+        print(f'[INFO] Number of image files in directory: {len(images)}')
         
         for image, prediction in zip(images, prediction_list):
             image = torch.as_tensor(nib.load(image).get_fdata()).unsqueeze(dim = 0).unsqueeze(dim = 0)

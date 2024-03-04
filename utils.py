@@ -148,6 +148,8 @@ def save_nifti(prediction_list: list,
         out_dir (str or Path): Directory where the NIfTI files will be saved.
         name (str): Prefix for the saved NIfTI files. Defaults to 'prediction'.
     '''
+    out_dir.mkdir(parents = True,
+                exist_ok = True)
     for i, data in enumerate(prediction_list):
         print(f'[INFO] Saving {name}_{i} Nifti file to {out_dir}')
         nib.save(nib.Nifti1Image(data.squeeze().cpu().numpy().astype(float), affine = None), Path(out_dir) / f'{name}_{i}.nii.gz')

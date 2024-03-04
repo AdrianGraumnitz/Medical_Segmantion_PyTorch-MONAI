@@ -66,11 +66,11 @@ def plot_image_label_prediction(test_patient: torch.Tensor,
     Plots images, labels, binary segmentations, and multi-segmentations for visual inspection.
 
     Args:
-    - test_patient (torch.Tensor): The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
-    - prediction (torch.Tensor): The predicted segmentation result.
-    - test_outputs (torch.Tensor): The output tensor from the model.
-    - start_image_index (int): Index of the first image for visualization. Default is 50.
-    - threshold (float): Threshold for binary segmentation. Default is 0.53.
+        test_patient (torch.Tensor): The tensor containing test data, including 'vol' (input volume) and 'seg' (true segmentation).
+        prediction (torch.Tensor): The predicted segmentation result.
+        test_outputs (torch.Tensor): The output tensor from the model.
+        start_image_index (int): Index of the first image for visualization. Default is 50.
+        threshold (float): Threshold for binary segmentation. Default is 0.53.
     """
         
     sigmoid_activation = transforms.Activations(sigmoid = True)
@@ -84,50 +84,42 @@ def plot_image_label_prediction(test_patient: torch.Tensor,
             plt.subplot(1, 4, 1)
             plt.title(f'Image {i}')
             plt.imshow(test_patient['vol'][0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.subplot(1, 4, 2)
-            plt.title(f'Label {i}')
-            plt.imshow(test_patient['seg'][0, 0, :, :, i + start_image_index], cmap ='gray')
-            plt.subplot(1, 4, 3)
-            plt.title(f'Binary segmentation {i}')
-            plt.imshow(test_outputs.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.subplot(1, 4, 4)
-            plt.title(f'Multi segmentation {i}')
-            plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
-            plt.show()
+            
+            if 'seg' in test_patient:
+                plt.subplot(1, 4, 2)
+                plt.title(f'Label {i}')
+                plt.imshow(test_patient['seg'][0, 0, :, :, i + start_image_index], cmap ='gray')
+                plt.subplot(1, 4, 3)
+                plt.title(f'Binary segmentation {i}')
+                plt.imshow(test_outputs.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+                plt.subplot(1, 4, 4)
+                plt.title(f'Multi segmentation {i}')
+                plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+                plt.show()
+            else:
+                plt.subplot(1, 4, 2)
+                plt.title(f'Binary segmentation {i}')
+                plt.imshow(test_outputs.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+                plt.subplot(1, 4, 3)
+                plt.title(f'Multi segmentation {i}')
+                plt.imshow(prediction.detach().cpu()[0, 0, :, :, i + start_image_index], cmap = 'gray')
+                plt.show()
 
-def plot_confusion_matrix(model: torch.nn.Module,
-                          test_dataloader: monai.data.DataLoader,
+def plot_confusion_matrix(prediction_list: list[torch.Tensor],
+                          label_list: list[torch.Tensor],
                           class_names: list,
-                          roi_size: tuple = (128, 128, 64),
-                          sw_batch_size: int = 4) -> list:
+                          ):
     '''
     Plots a confusion matrix for multiclass segmentation using predicted and true labels.
 
     Args:
-    - model (torch.nn.Module): The PyTorch model used for prediction.
-    - test_dataloader (monai.data.DataLoader): Dataloader for the test data set
-    - class_names (list): A list of class names corresponding to the categories.
-    - roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
-    - sw_batch_size (int): Sliding window batch size. Default is 4.
+        prediction_list (list[torch.Tensor]): A list containing tensors of predicted segmentations.
+        label_list (list[torch.Tensor]): A list containing tensors of true segmentations.
+        class_names (list): A list containing the names of the classes for the confusion matrix.
     
     Return:
     - list: Containing the test predictions
     '''
-    
-    prediction_list = []
-    label_list = []
-    model.eval()
-    with torch.inference_mode():
-        for data in test_dataloader:
-            t_volume = data['vol']
-            test_outputs = inferers.sliding_window_inference(inputs = t_volume,
-                                                        roi_size = roi_size,
-                                                        sw_batch_size = sw_batch_size,
-                                                        predictor = model
-                                                        )
-            prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1)
-            prediction_list.append(prediction)
-            label_list.append(data['seg'].squeeze(dim = 0))
         
     prediction_cat_tensor = torch.cat(prediction_list)
     label_cat_tensor = torch.cat(label_list)

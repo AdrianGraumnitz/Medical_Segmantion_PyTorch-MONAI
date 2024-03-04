@@ -268,16 +268,16 @@ def perform_inference(model: torch.nn.Module,
     '''
     Performs inference using the sliding window technique on the given input volume.
 
-    Parameters:
-    - model (torch.nn.Module): The PyTorch model used for prediction.
-    - test_patient (torch.Tensor): The input volume on which to perform inference.
-    - roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
-    - sw_batch_size (int): Sliding window batch size. Default is 4.
-    - device (torch.device): The device on which to perform inference.
+    Args:
+        model (torch.nn.Module): The PyTorch model used for prediction.
+        test_patient (torch.Tensor): The input volume on which to perform inference.
+        roi_size (tuple[int, int, int]): Region of interest size. Default is (128, 128, 64).
+        sw_batch_size (int): Sliding window batch size. Default is 4.
+        device (torch.device): The device on which to perform inference.
 
     Returns:
-    - tuple[torch.Tensor: The output of the model,
-            torch.Tensor: The predicted segmentation result.
+        tuple[torch.Tensor: The output of the model,
+            torch.Tensor: The predicted segmentation result.]
     '''
     with torch.inference_mode():
         
@@ -289,8 +289,48 @@ def perform_inference(model: torch.nn.Module,
                                                         )
         prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1).unsqueeze(dim = 0)
         
-        print(f'[INFO]\nImage shape: {test_patient["vol"].shape}\nLabel shape: {test_patient["seg"].shape}\nBinary segmentation shape: {test_outputs.shape}\nMulti segmentation shape: {prediction.shape}')
+        label_shape = test_patient["seg"].shape if "seg" in test_patient else "No label shape"
+        print(f'[INFO]\nImage shape: {test_patient["vol"].shape}\nLabel shape: {label_shape}\nBinary segmentation shape: {test_outputs.shape}\nMulti segmentation shape: {prediction.shape}')
         
         return prediction, test_outputs
+
+        
+
+def create_prediction_list(model: torch.nn.Module,
+                          test_dataloader: monai.data.DataLoader,
+                          roi_size: tuple = (128, 128, 64),
+                          sw_batch_size: int = 4) -> list:
+    """
+    Generates a list of predictions and their corresponding labels using the given model and test data loader. 
+    If no labels are provided in the test data loader, the label list will be empty.
+
+    Args:
+        model (torch.nn.Module): The trained model used for inference.
+        test_dataloader (monai.data.DataLoader): The data loader containing the test data.
+        roi_size (tuple, optional): The size of the regions of interest (ROI) for sliding window inference. Default is (128, 128, 64).
+        sw_batch_size (int, optional): The batch size for sliding window inference. Default is 4.
+
+    Returns:
+        tuple[list: list of predictions,
+        list: list of corresponding labels]
+
+    """
+    prediction_list = []
+    label_list = []
+    model.eval()
+    with torch.inference_mode():
+        for data in test_dataloader:
+            t_volume = data['vol']
+            test_outputs = inferers.sliding_window_inference(inputs = t_volume,
+                                                        roi_size = roi_size,
+                                                        sw_batch_size = sw_batch_size,
+                                                        predictor = model
+                                                        )
+            prediction = torch.softmax(test_outputs, dim = 1).argmax(dim = 1)
+            prediction_list.append(prediction)
+            if 'seg' in data:
+                label_list.append(data['seg'].squeeze(dim = 0))
+                
+    return prediction_list, label_list
     
 

@@ -1,6 +1,3 @@
-Projektantrag  
-Risikoanalyse  
-
 Legende:  
 	- "" Sätze für die Doku  
 	- ?? Änderungen im Code welche zu unvorhergesehenen Folgen führen könnte -> genau beobachten  
@@ -26,8 +23,6 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-nibabel  
 		-torchinfo  
 		-torchmetrics (brauch ich vielleicht gar nicht (nutze dice_metric))
-		-torchvision 
-		-typing (deprecated) 
 		-tqdm  
 !!		-nii2dcm (um die anwendung konsistent in python zu haben)
 		-dicom2nifti
@@ -37,6 +32,7 @@ Virtuelle Umgebung in Anaconda programmiert:
 		-open3d (erstellt ein Mesh der predictions)
 		-scikit image/skimage (zum plotten von meshes)
 		-numpy-stl (Um mesh Daten als .stl Datei Abzuspeichern.
+		-plotly
 	
 ------data_preprocess--------  
 	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
@@ -57,7 +53,7 @@ Funktionen:
 ??				 Habe die Funktion mit .unlink() ergänzt, sollte alle leeren Bilder löschen.  
 	-set_seed: Zufallswerte für berechnung auf cpu/gpu festlegen. 
 	-edit_label: Funktion erkennt die Anzahl der unique Werte (Grauwerte) und maped sie zu einem Index in ein Dictionary. Löscht die Originaldatei wenn gemapped Datei existiert  
-!!	-prepare: über parameter informieren, sind die Werte gut?  
+!!	-prepare_train_eval_data: über parameter informieren, sind die Werte gut?  
 !!			  Die Pfade könnten Probleme verursachen.  
 			  Dictionaries werden mit list comprehension und der zip funktion erstellt. Zip Funktion erstellt einen iterator von paarweisen Tuples.  
 			  transforms: Überlegen ob die train_transforms überarbeitet werden können/sollen/müssen.  
@@ -74,6 +70,7 @@ Funktionen:
 												clip = Wenn auf True gesetzt werden die Werte die sich außerhalb des Zielintervalls befinden auf b_min oder b_max gesetzt.  
 !!						  Resize: spatial_size: Anzahl der Voxel. Es besteht die Möglichkeit, dass Spacingd und Resized miteinander interferieren, da Spacingd die Größe der Voxel skaliert, während Resized die Anzahl der Voxel verändert  
 $$						  Einen Normalizer verwenden (z.b. transforms.NormalizeIntensity(keys = ['vol'], non_zero = True)  
+	- prepare_test_data: Erstellt einen Testdataloader für die prediction.
   
 ---------U-Net------------  
 	Parameter:  
@@ -104,6 +101,7 @@ $$++	train_step: Model muss noch gespeichert werden. Gibt train loss und train m
 			   Habe ich mit Summary writer ergänzt  
 $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung für die Loss Funktion basierend auf der relativen häufigkeit der Klasse. Soll ein mögliches Klassenungleichgewicht in den Daten ausgleichen  
 		perform_inference: Funktion welchen einen prediction Datensatz zurück gibt.  
+		create_prediction_list: erstellt eine Liste mit predictions und eine Liste mit Labels  
   
 ---------utils-------------  
 !!	Die target_dir Variabel ist nicht Konsistent als Datentyp (manchmal String manchmal pathlib Objekt)  
@@ -145,7 +143,7 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	5. Index  
 
 ----------plot------------  
-	Beeinhaltet alle Funktionen zum plotten von Daten  
+	Beeinhaltet alle Funktionen zum plotten von Daten
 	Funktionen:
 		generate_mesh: Generiert ein Mesh auf basis der reskalierten predictions.  
 		plot_mesh: Vertices sind Koordinatenpunkte im Raum welche die Ecken der Dreiecke definieren. Ein Vertices besteht aus einer Anzahl Vortex (Einzahl von Vertices),  
@@ -158,11 +156,4 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	
 ---------Tensorboard Tutorial--------  
 	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs  
-	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007  
-
-------------------------------------------------------------  
-Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
-  
-
-------------------------------------------------------------  
-Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen. 
+	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007 
