@@ -1,15 +1,4 @@
-Projektantrag  
-Risikoanalyse  
-
-Legende:  
-	* "" Sätze für die Doku  
-	- ?? Änderungen im Code welche zu unvorhergesehenen Folgen führen könnte -> genau beobachten  
-	- !! Überarbeiten/ tiefergehend mit auseinandersetzen  
-	- $$ Nicht implementierte Ergänzungen/Ideen  
-	- ++ Gelöst  
-	
--------------------------------  
--------------------## Programm--------------------------------  
+------------------- Programm--------------------------------  
 
 ------genutzte Software-----  
 Windows 10/11  

@@ -1,7 +1,6 @@
 import torch
 import torchmetrics
-import monai
-from monai import inferers, transforms
+from monai import transforms
 from skimage import measure
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -161,7 +160,8 @@ def generate_mesh(rescaled_prediction: torch.Tensor,
 
 def plot_mesh(vertices_list: list,
               faces_list: list,
-              opacity: float = 0.5
+              opacity: float = 0.5,
+              class_names = None
                   ):
     '''
     Plots a mesh with multiple segments.
@@ -172,19 +172,35 @@ def plot_mesh(vertices_list: list,
         opacity (float): The transparent appearance of the mesh
     '''
     fig = go.Figure()
-    for i in range(1, len(vertices_list)):
-        fig.add_trace(
-            go.Mesh3d(
-                x = vertices_list[i-1][:, 0],
-                y = vertices_list[i-1][:, 1],
-                z = vertices_list[i-1][:, 2],
-                i = faces_list[i-1][:, 0],
-                j = faces_list[i-1][:, 1],
-                k = faces_list[i-1][:, 2],
-                opacity = opacity,
-                name = f'Segment {i}'
+    for i in range(1, len(vertices_list) + 1):
+        if class_names == None:
+            fig.add_trace(
+                go.Mesh3d(
+                    x = vertices_list[i-1][:, 0],
+                    y = vertices_list[i-1][:, 1],
+                    z = vertices_list[i-1][:, 2],
+                    i = faces_list[i-1][:, 0],
+                    j = faces_list[i-1][:, 1],
+                    k = faces_list[i-1][:, 2],
+                    opacity = opacity,
+                    name = f'Segment {i}',
+                    showlegend = True
+                )
             )
-        )
+        else:
+            fig.add_trace(
+                go.Mesh3d(
+                    x = vertices_list[i-1][:, 0],
+                    y = vertices_list[i-1][:, 1],
+                    z = vertices_list[i-1][:, 2],
+                    i = faces_list[i-1][:, 0],
+                    j = faces_list[i-1][:, 1],
+                    k = faces_list[i-1][:, 2],
+                    opacity = opacity,
+                    name = class_names[i],
+                    showlegend = True
+                )
+            )
     fig.update_layout(
         title = 'Mesh for every segment',
         scene = dict(
@@ -194,3 +210,4 @@ def plot_mesh(vertices_list: list,
         )
     )
     fig.show()
+

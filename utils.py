@@ -68,6 +68,8 @@ def save_metric(name: str,
         metric_list (list): List of metric values to be saved
     '''
     #print(f'[INFO] Saving metric {name} to {target_dir}.')
+    Path(target_dir).mkdir(parents = True,
+                           exist_ok = True)
     file_name = name + '.npy'
     target_dir = Path(target_dir) / file_name
     
@@ -84,6 +86,8 @@ def save_best_metric(target_dir: Path,
         target_dir (str or Path): Directory path where the best metric file will be saved.
         best_metric (float): best_metric: Value of the best metric achieved.
     '''
+    Path(target_dir).mkdir(parents = True,
+                           exist_ok = True)
     best_metric_dir = Path(target_dir) / 'best_metric.txt'
     with open(best_metric_dir, 'w') as file:
         file.write(str(best_metric)) 
@@ -195,3 +199,31 @@ def remove_directory_recursive(in_dir: Path):
         print(f'[INFO] The directory {in_dir} has been recursively removed.')
     else:
         print(f'[INFO] No directory exists under the path: {in_dir}.')
+
+def save_ply(vertex: np.array,
+             face: np.array):
+    '''
+    Saves vertex and face data as a PLY file.
+    
+    Args:
+        vertex (np.array): Containing the vertices of the predicted image
+        face (np.array): Containig the faces of the predicted image
+    '''
+    nx = len(vertex)
+    nf = len(face)
+    print(f'[INFO] Number Vertices {nx}')
+    print(f'[INFO] Number Faces {nf}')
+    
+    with open('test.ply', 'w') as f:
+        f.write(f'ply\n')
+        f.write(f'format ascii 1.0\n')
+        f.write(f'element vertex {nx}\n')
+        f.write(f'property float x\n')
+        f.write(f'property float y\n')
+        f.write(f'property float z\n')
+        f.write(f'element face {nf}\n')
+        f.write(f'end_header\n')
+        for i in range(0, nx):
+            f.write(f'{vertex[i, 0]} {vertex[i, 1]} {vertex[i, 2]}\n')
+        for i in range(0, nf):
+            f.write(f'{len(face[2])} {face[i, 0]} {face[i, 1]} {face[i, 2]}\n')
