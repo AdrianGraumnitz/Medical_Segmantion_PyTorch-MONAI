@@ -1,12 +1,15 @@
+Projektantrag  
+Risikoanalyse  
+
 Legende:  
-	- "" Sätze für die Doku  
+	* "" Sätze für die Doku  
 	- ?? Änderungen im Code welche zu unvorhergesehenen Folgen führen könnte -> genau beobachten  
 	- !! Überarbeiten/ tiefergehend mit auseinandersetzen  
 	- $$ Nicht implementierte Ergänzungen/Ideen  
 	- ++ Gelöst  
 	
 -------------------------------  
--------------------Programm--------------------------------  
+-------------------## Programm--------------------------------  
 
 ------genutzte Software-----  
 Windows 10/11  
@@ -18,21 +21,15 @@ Jupyter Notebook
 
 Virtuelle Umgebung in Anaconda programmiert:  
 	Installierte Libraries:  
-		-monai  
-		-Pytorch  
-		-nibabel  
-		-torchinfo  
-		-torchmetrics (brauch ich vielleicht gar nicht (nutze dice_metric))
-		-tqdm  
-!!		-nii2dcm (um die anwendung konsistent in python zu haben)
-		-dicom2nifti
-		-tensorboard
-		-icecream (debuggen)
-		-mlxtend (plotting confusion matrix)
-		-open3d (erstellt ein Mesh der predictions)
-		-scikit image/skimage (zum plotten von meshes)
-		-numpy-stl (Um mesh Daten als .stl Datei Abzuspeichern.
-		-plotly
+		`monai  1.3.0`
+		`Pytorch  2.1.2`  
+		`nibabel 5.2.0`  
+		`torchinfo 1.8.0`  
+		`tqdm 4.66.1`  
+		`dicom2nifti 2.3.4`    
+		`mlxtend 0.23.1`    
+		`scikit image/skimage 0.20.0`  
+		`plotly 5.18.0`  
 	
 ------data_preprocess--------  
 	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
@@ -41,23 +38,18 @@ Aktuelles verzeichnis zeigen : Path(__file__).parent
 
 Funktionen:  
 	-create_groups: patient_name = gibt die pfadnamen (Dateinamen) zurück.  
-					numberfolders = teilt den inhalt eines underverzeichnisses durch die variabel Number_Slices.  
-					Ich würde gern ein Feedback bekommen wenn der Pfad schon existiert, klappt noch nicht.  
+					numberfolders = teilt den inhalt eines underverzeichnisses durch die variabel Number_Slices.    
 					Wichtig: der Pfad muss auf das Train/Test directory zeigen, nicht auf die unterordner ('test_data' / 'dicom' /'images_train').  
-					Dateien müssen vorher in unterordner (z.B.: "heart_0") gesteckt werden aber die Funktion greift auf den überordner ("train") zu
-""	Anstatt wie in vielen Beispielen das os Modul zu nutzen um durch Verzeichnise zu navigieren habe ich mich für die objektorientierte und modernere Version des pathlib Moduls entschieden.  
+					Dateien müssen vorher in unterordner (z.B.: "heart_0") gesteckt werden aber die Funktion greift auf den überordner ("train") zu  
 	-dicom2nifti: Durch die mit Dicoms gefüllten vorher erstellten Patientenordner wird durchiteriert und es werden niftis für jeden ordner erstellt.  
 	-find empty: Niftis werden mit Nibabel geladen.  
 				 get_fdata = gibt ein numpy array mit den voxelwerten des Volumens zurück.  
-				 len(unique) > 2 = zählt die eindeutigen werte und gibt True zurück wenn es mehr als zwei sind.  
-??				 Habe die Funktion mit .unlink() ergänzt, sollte alle leeren Bilder löschen.  
+				 len(unique) > 2 = zählt die eindeutigen werte und gibt True zurück wenn es mehr als zwei sind.    
 	-set_seed: Zufallswerte für berechnung auf cpu/gpu festlegen. 
 	-edit_label: Funktion erkennt die Anzahl der unique Werte (Grauwerte) und maped sie zu einem Index in ein Dictionary. Löscht die Originaldatei wenn gemapped Datei existiert  
-!!	-prepare_train_eval_data: über parameter informieren, sind die Werte gut?  
-!!			  Die Pfade könnten Probleme verursachen.  
+	-prepare_train_eval_data:    
 			  Dictionaries werden mit list comprehension und der zip funktion erstellt. Zip Funktion erstellt einen iterator von paarweisen Tuples.  
-			  transforms: Überlegen ob die train_transforms überarbeitet werden können/sollen/müssen.  
-						  LoadImaged: Läd Bild datei und konvertiert sie zu einem Tensor.  
+			  transforms: LoadImaged: Läd Bild datei und konvertiert sie zu einem Tensor.  
 						  Spacingd:	pixdim = Skaliert die größe der Voxel und ihr abstand untereinander gemessen vom Voxelzentrum.  
 									interpolation = Schätz die Anordnung der Pixel auf den Voxeln.  
 									bilinear (Wird für die Volumes genutzt) = berechnet/schätzt Pixelwerte in dem es den Mittelwert der 4 (2 Dimensionaler Raum)/ 8 (3 Dimensionaler Raum) nächsten Punkte berechnet.  
@@ -156,4 +148,19 @@ $$		calculate weights (nur für cross entropy loss): Berechnet die Gewichtung f�
 	
 ---------Tensorboard Tutorial--------  
 	Um tensorboard auszuführen muss dieser Kommandozeilen Befehl eingegeben werden: tensorboard --logdir ..\runs  
-	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007 
+	Um Tensorboard im Browser darzustellen muss dies Lokaladresse eingegeben werden: localhost:6007  
+
+------------------------------------------------------------  
+Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benannten Ordner abgespeichert werden (z.B heart_01)  
+  
+
+------------------------------------------------------------  
+Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.   
+
+
+
+-------------------------------------------------------------
+
+
+
+	
