@@ -209,12 +209,16 @@ def save_ply(vertex: np.array,
         vertex (np.array): Containing the vertices of the predicted image
         face (np.array): Containig the faces of the predicted image
     '''
+    target_dir = Path.cwd().parent / 'data' / 'Mesh'
+    target_dir.mkdir(parents = True,
+                     exist_ok = True)
+    
     nx = len(vertex)
     nf = len(face)
     print(f'[INFO] Number Vertices {nx}')
     print(f'[INFO] Number Faces {nf}')
     
-    with open('test.ply', 'w') as f:
+    with open(target_dir/'test.ply', 'w') as f:
         f.write(f'ply\n')
         f.write(f'format ascii 1.0\n')
         f.write(f'element vertex {nx}\n')
@@ -222,6 +226,7 @@ def save_ply(vertex: np.array,
         f.write(f'property float y\n')
         f.write(f'property float z\n')
         f.write(f'element face {nf}\n')
+        f.write(f'property list uchar int vertex_indices')
         f.write(f'end_header\n')
         for i in range(0, nx):
             f.write(f'{vertex[i, 0]} {vertex[i, 1]} {vertex[i, 2]}\n')
