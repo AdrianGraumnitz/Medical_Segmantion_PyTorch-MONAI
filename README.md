@@ -1,6 +1,4 @@
-
-------------------- Programm--------------------------------  
-
+Programm  
 
 ------genutzte Software-----  
 Windows 10/11  
@@ -22,8 +20,17 @@ Virtuelle Umgebung in Anaconda programmiert:
 		`scikit image/skimage 0.20.0`  
 		`plotly 5.18.0`  
 	
-------data_preprocess--------  
+------data_preprocess.ipynb--------  
 	Bereitet den Datensatz für den Dataloader vor und Unterstützt die Anwendenden Personen.  
+	  
+------train.ipynb------  
+	Notebook um ein Model zu trainieren  
+	  
+--------predictions.ipynb-------------  
+	Notebook für die predictions und visualisierung der Ergebnisse.  
+  
+  
+    
 ------Preprocess------  
 Aktuelles verzeichnis zeigen : Path(__file__).parent  
 
@@ -53,6 +60,9 @@ Funktionen:
 												clip = Wenn auf True gesetzt werden die Werte die sich außerhalb des Zielintervalls befinden auf b_min oder b_max gesetzt.  
 						  Resize: spatial_size: Anzahl der Voxel. Es besteht die Möglichkeit, dass Spacingd und Resized miteinander interferieren, da Spacingd die Größe der Voxel skaliert, während Resized die Anzahl der Voxel verändert   
 	- prepare_test_data: Erstellt einen Testdataloader für die prediction.
+	- move_nifti_files: Verschiebt Nifti files von einem gewünschten Verzeichnis in ein gewünschtes Verzeichnis
+	- rescale_predictions: Rescaled die predictions auf die höhen, breiten und tiefen dimension der Originalbilder.  
+
   
 ---------U-Net------------  
 	Parameter:  
@@ -93,7 +103,6 @@ Funktionen:
 		save_nifti: Nimmt eine Liste mit den predictions an (vorher hat sie nur einen Tensor angenommen). -> Prediction wird in einer Nifti-Datei gespeichert.   
 		number_of_classes: Gibt die Anzahl an Klassen zurück  
 		remove_directory_recursive: Löscht ein Verzeichnis mit all seinen Daten.  
-		rescale_predictions: Rescaled die predictions auf die höhen, breiten und tiefen dimension der Originalbilder.  
 		
 ---------predictions-----------  
 	Es wird ein Monai transformer namen Activations importiert. Diese gibt die möglichkeit auf die Daten eine Aktivierungsfunktion wirken schon bevor sie ins Netz gehen.  
@@ -131,12 +140,4 @@ Ordner Strukture: Die Images und die zugehörigen Labels müssen in gleich benan
   
 
 ------------------------------------------------------------  
-Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.   
-
-
-
--------------------------------------------------------------
-
-
-
-	
+Annotationen: Um die lesbarkeit des Codes zu erhöhen habe ich alle Parameter, Rückgabewerte und Variabeln mit Datentyp Annotationen versehen.  

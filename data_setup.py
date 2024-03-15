@@ -302,3 +302,22 @@ def rescale_predictions(prediction_list: list[torch.Tensor],
                                                 mode = 'nearest')
             rescaled_prediction_list.append(torch.flip(rescaled_prediction, dims = (2,)))
         return rescaled_prediction_list
+
+def move_nifti_files(in_dir: Path,
+              out_dir = Path):
+    '''
+    Moves all files with the extension '.nii.gz' from the input directory
+    to the output directory.
+
+    Args:
+        in_dir (Path): The input directory from which files will be moved.
+        out_dir (Path): The output directory to which files will be moved.
+
+    '''
+    file: Path = Path(in_dir).glob('*.nii.gz')
+    out_dir.mkdir(parents = True,
+                  exist_ok = True)
+    
+    for nifti in file:
+        nifti.rename(out_dir / nifti.name)
+        print(f'[INFO] Moving {nifti.name} to {out_dir / nifti.name}')
