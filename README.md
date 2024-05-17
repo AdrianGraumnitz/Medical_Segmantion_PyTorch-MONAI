@@ -27,16 +27,16 @@
 `Python 3.11.5`  
   
   
-	installed libaries:    
-		`dicom2nifti 2.3.4`  
-		`mlxtend 0.23.1`  
-		`MONAI  1.3.0`  
-		`nibabel 5.2.0`  
-		`PyTorch  2.1.2`  
-		`plotly 5.18.0`  
-		`torchinfo 1.8.0`  
-		`tqdm 4.66.1`  
-		`scikit image/skimage 0.20.0`  
+------installed libaries----  
+`dicom2nifti 2.3.4`  
+`mlxtend 0.23.1`  
+`MONAI  1.3.0`  
+`nibabel 5.2.0`  
+`PyTorch  2.1.2`  
+`plotly 5.18.0`  
+`torchinfo 1.8.0`  
+`tqdm 4.66.1`  
+`scikit image/skimage 0.20.0`  
 		
 	
   
