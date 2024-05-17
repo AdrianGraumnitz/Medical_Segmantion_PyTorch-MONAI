@@ -23,7 +23,7 @@
 `Anaconda`  
 `VS Code`  
 `Notepad++`  
-`Jupyter Notebook`
+`Jupyter Notebook`  
 `Python 3.11.5`  
   
   
