@@ -44,7 +44,7 @@
   
     
 ------data_setup------  
-Show current directory: Path(file).parent
+Show current directory: Path.cwd()
   
 Functions:
   
