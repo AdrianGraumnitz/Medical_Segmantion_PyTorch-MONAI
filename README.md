@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="image/3-D_Mesh.png" alt="3D Heart Segmentation Visualization" width="800"/>
+</p>
+
+
+# Three-Dimensional Mesh Generation from CT Scan Multisegmentation: A Case Study on the Human Heart
+
 ## Step 1: Open the 'data_preprocess' notebook. This notebook helps you create the directory where you can put your data and checks if your data is in the NIFTI format. If it is in DICOM, you can use this notebook for converting the data. Additionally, if your labels need classification, the notebook also helps you map your labels.  
   
 ## Step 2: Open the 'train' notebook to create a U-Net model and train it with your data.  
